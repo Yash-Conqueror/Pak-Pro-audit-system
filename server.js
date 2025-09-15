@@ -758,7 +758,61 @@ app.get('/api/user', authenticateToken, async (req, res) => {
     res.status(500).json({ error: 'Failed to fetch user' });
   }
 });
+// Get all users (analysts only)
+app.get('/api/users/list', authenticateToken, requireRole(['data_analyst']), async (req, res) => {
+  try {
+    const users = await readJsonFile(USERS_FILE, []);
+    
+    // Return user info without password hashes
+    const userList = users.map(user => ({
+      id: user.id,
+      username: user.username,
+      email: user.email,
+      role: user.role,
+      fullName: user.fullName,
+      department: user.department,
+      isActive: user.isActive,
+      createdAt: user.createdAt,
+      lastLogin: user.lastLogin
+    }));
 
+    res.json({ users: userList });
+  } catch (error) {
+    console.error('Error fetching users:', error);
+    res.status(500).json({ error: 'Failed to fetch users' });
+  }
+});
+
+// Delete user (analysts only)
+app.delete('/api/users/:id', authenticateToken, requireRole(['data_analyst']), async (req, res) => {
+  try {
+    const userIdToDelete = parseInt(req.params.id);
+    
+    // Prevent self-deletion
+    if (userIdToDelete === req.user.userId) {
+      return res.status(400).json({ error: 'Cannot delete your own account' });
+    }
+
+    const users = await readJsonFile(USERS_FILE, []);
+    const userIndex = users.findIndex(u => u.id === userIdToDelete);
+    
+    if (userIndex === -1) {
+      return res.status(404).json({ error: 'User not found' });
+    }
+
+    const deletedUser = users[userIndex];
+    users.splice(userIndex, 1);
+    await writeJsonFile(USERS_FILE, users);
+
+    res.json({ 
+      message: 'User deleted successfully', 
+      deletedUser: deletedUser.username 
+    });
+  } catch (error) {
+    console.error('Error deleting user:', error);
+    res.status(500).json({ error: 'Failed to delete user' });
+  }
+});
 // Serve frontend
 app.get('*', (req, res) => {
   res.sendFile(path.join(__dirname, 'public', 'index.html'));
