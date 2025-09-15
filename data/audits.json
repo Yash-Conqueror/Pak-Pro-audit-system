@@ -1,0 +1,37 @@
+[
+  {
+    "id": "AUDIT-1757922172996",
+    "status": "draft",
+    "entityName": "Pak pro",
+    "contractRef": "222",
+    "location": "Thika",
+    "generalInfo": {
+      "entityName": "Pak pro",
+      "contractRef": "222",
+      "entityAddress": "Thika",
+      "verificationPeriod": "6days",
+      "projectTitle": "Recycle",
+      "auditeeTeamLeader": "Sam",
+      "startDate": "2025-09-15",
+      "onSiteDate": "2025-09-15"
+    },
+    "validation": {
+      "spotChecks": "",
+      "rejectedMaterial": "",
+      "rejectionDetails": "",
+      "contractAmendments": "",
+      "amendmentDetails": "",
+      "additionalComments": ""
+    },
+    "conclusions": {
+      "assessmentStatus": "",
+      "auditTeamLeader": "",
+      "auditDate": "2025-09-15",
+      "conclusionComments": ""
+    },
+    "completionPercentage": 50,
+    "updatedAt": "2025-09-15T07:42:55.714Z",
+    "createdBy": 1,
+    "createdAt": "2025-09-15T07:42:52.996Z"
+  }
+]

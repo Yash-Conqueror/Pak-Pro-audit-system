@@ -805,7 +805,15 @@
                     currentAudit = data.audit;
                     populateForms();
                     showSection('general');
-                    document.getElementById('deleteBtn').style.display = 'inline-block';
+                    
+                    // Show delete button only for data analysts
+                    const deleteBtn = document.getElementById('deleteBtn');
+                    if (currentUser.role === 'data_analyst') {
+                        deleteBtn.style.display = 'inline-block';
+                    } else {
+                        deleteBtn.style.display = 'none';
+                    }
+                    
                     showAlert('Audit loaded: ' + auditId, 'info');
                 } else {
                     throw new Error(data.error);

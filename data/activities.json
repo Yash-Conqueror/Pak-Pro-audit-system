@@ -1,0 +1,12 @@
+[
+  {
+    "id": 1757922172997,
+    "auditId": "AUDIT-1757922172996",
+    "userId": 1,
+    "activityType": "created",
+    "description": "Audit created",
+    "oldStatus": null,
+    "newStatus": null,
+    "createdAt": "2025-09-15T07:42:52.997Z"
+  }
+]
