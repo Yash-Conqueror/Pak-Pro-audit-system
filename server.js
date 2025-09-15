@@ -1,6 +1,6 @@
-// PAKPRO Audit System - Enhanced Multi-User Version
+// PAKPRO Audit System - Railway Compatible (No Native Dependencies)
 const express = require('express');
-const Database = require('better-sqlite3');
+const fs = require('fs').promises;
 const path = require('path');
 const cors = require('cors');
 const bcrypt = require('bcryptjs');
@@ -12,6 +12,13 @@ const app = express();
 const PORT = process.env.PORT || 3000;
 const JWT_SECRET = process.env.JWT_SECRET || 'pakpro-audit-secret-key';
 
+// Data directory
+const DATA_DIR = './data';
+const USERS_FILE = path.join(DATA_DIR, 'users.json');
+const AUDITS_FILE = path.join(DATA_DIR, 'audits.json');
+const ACTIVITIES_FILE = path.join(DATA_DIR, 'activities.json');
+const NOTIFICATIONS_FILE = path.join(DATA_DIR, 'notifications.json');
+
 // Middleware
 app.use(cors());
 app.use(express.json({ limit: '10mb' }));
@@ -20,164 +27,105 @@ app.use(express.static('public'));
 // Rate limiting
 const limiter = rateLimit({
   windowMs: 15 * 60 * 1000,
-  max: 200 // Increased for field teams
+  max: 200
 });
 app.use('/api/', limiter);
 
-// Database setup with enhanced schema
-const db = new Database('./pakpro_audits.db');
-
-// Initialize database with enhanced tables
-function initializeDatabase() {
+// Data management functions
+async function ensureDataDirectory() {
   try {
-    // Users table with enhanced fields
-    db.exec(`
-      CREATE TABLE IF NOT EXISTS users (
-        id INTEGER PRIMARY KEY AUTOINCREMENT,
-        username TEXT UNIQUE NOT NULL,
-        email TEXT UNIQUE NOT NULL,
-        password_hash TEXT NOT NULL,
-        role TEXT DEFAULT 'field_auditor',
-        full_name TEXT,
-        department TEXT,
-        phone TEXT,
-        is_active INTEGER DEFAULT 1,
-        last_login DATETIME,
-        created_at DATETIME DEFAULT CURRENT_TIMESTAMP
-      )
-    `);
+    await fs.access(DATA_DIR);
+  } catch {
+    await fs.mkdir(DATA_DIR, { recursive: true });
+  }
+}
 
-    // Enhanced audits table
-    db.exec(`
-      CREATE TABLE IF NOT EXISTS audits (
-        id TEXT PRIMARY KEY,
-        created_by INTEGER NOT NULL,
-        assigned_analyst INTEGER,
-        status TEXT DEFAULT 'draft',
-        priority TEXT DEFAULT 'normal',
-        entity_name TEXT,
-        contract_ref TEXT,
-        location TEXT,
-        audit_type TEXT,
-        general_info TEXT,
-        validation_data TEXT,
-        conclusions_data TEXT,
-        analyst_notes TEXT,
-        completion_percentage INTEGER DEFAULT 0,
-        due_date DATE,
-        created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
-        updated_at DATETIME DEFAULT CURRENT_TIMESTAMP,
-        submitted_at DATETIME,
-        reviewed_at DATETIME,
-        finalized_at DATETIME,
-        FOREIGN KEY (created_by) REFERENCES users (id),
-        FOREIGN KEY (assigned_analyst) REFERENCES users (id)
-      )
-    `);
+async function readJsonFile(filePath, defaultData = []) {
+  try {
+    const data = await fs.readFile(filePath, 'utf8');
+    return JSON.parse(data);
+  } catch {
+    return defaultData;
+  }
+}
 
-    // Audit activity log table
-    db.exec(`
-      CREATE TABLE IF NOT EXISTS audit_activities (
-        id INTEGER PRIMARY KEY AUTOINCREMENT,
-        audit_id TEXT NOT NULL,
-        user_id INTEGER NOT NULL,
-        activity_type TEXT NOT NULL,
-        description TEXT,
-        old_status TEXT,
-        new_status TEXT,
-        created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
-        FOREIGN KEY (audit_id) REFERENCES audits (id),
-        FOREIGN KEY (user_id) REFERENCES users (id)
-      )
-    `);
+async function writeJsonFile(filePath, data) {
+  await fs.writeFile(filePath, JSON.stringify(data, null, 2));
+}
 
-    // Comments table for collaboration
-    db.exec(`
-      CREATE TABLE IF NOT EXISTS audit_comments (
-        id INTEGER PRIMARY KEY AUTOINCREMENT,
-        audit_id TEXT NOT NULL,
-        user_id INTEGER NOT NULL,
-        comment TEXT NOT NULL,
-        is_internal INTEGER DEFAULT 1,
-        created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
-        FOREIGN KEY (audit_id) REFERENCES audits (id),
-        FOREIGN KEY (user_id) REFERENCES users (id)
-      )
-    `);
-
-    // Notifications table
-    db.exec(`
-      CREATE TABLE IF NOT EXISTS notifications (
-        id INTEGER PRIMARY KEY AUTOINCREMENT,
-        user_id INTEGER NOT NULL,
-        audit_id TEXT,
-        type TEXT NOT NULL,
-        title TEXT NOT NULL,
-        message TEXT NOT NULL,
-        is_read INTEGER DEFAULT 0,
-        created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
-        FOREIGN KEY (user_id) REFERENCES users (id),
-        FOREIGN KEY (audit_id) REFERENCES audits (id)
-      )
-    `);
-
-    console.log('Enhanced database tables initialized');
-
-    // Create default users
-    const userCount = db.prepare("SELECT COUNT(*) as count FROM users").get();
-    if (userCount.count === 0) {
-      createDefaultUsers();
+// Initialize database
+async function initializeDatabase() {
+  try {
+    await ensureDataDirectory();
+    
+    // Initialize users
+    const users = await readJsonFile(USERS_FILE, []);
+    if (users.length === 0) {
+      await createDefaultUsers();
     }
+    
+    // Initialize other files
+    await readJsonFile(AUDITS_FILE, []);
+    await readJsonFile(ACTIVITIES_FILE, []);
+    await readJsonFile(NOTIFICATIONS_FILE, []);
+    
+    console.log('Database initialized with JSON files');
   } catch (error) {
     console.error('Error initializing database:', error);
   }
 }
 
-// Create default users with different roles
+// Create default users
 async function createDefaultUsers() {
-  const users = [
+  const defaultUsers = [
     {
+      id: 1,
       username: 'admin',
       email: 'admin@pakpro.com',
       password: 'pakpro123',
       role: 'data_analyst',
-      full_name: 'System Administrator',
-      department: 'Data Analysis'
+      fullName: 'System Administrator',
+      department: 'Data Analysis',
+      isActive: true,
+      createdAt: new Date().toISOString()
     },
     {
+      id: 2,
       username: 'analyst1',
       email: 'analyst1@pakpro.com',
       password: 'analyst123',
       role: 'data_analyst',
-      full_name: 'Data Analyst 1',
-      department: 'Data Analysis'
+      fullName: 'Data Analyst 1',
+      department: 'Data Analysis',
+      isActive: true,
+      createdAt: new Date().toISOString()
     },
     {
+      id: 3,
       username: 'auditor1',
       email: 'auditor1@pakpro.com',
       password: 'auditor123',
       role: 'field_auditor',
-      full_name: 'Field Auditor 1',
-      department: 'Field Operations'
+      fullName: 'Field Auditor 1',
+      department: 'Field Operations',
+      isActive: true,
+      createdAt: new Date().toISOString()
     }
   ];
 
-  for (const user of users) {
-    try {
-      const hashedPassword = await bcrypt.hash(user.password, 10);
-      const stmt = db.prepare(`
-        INSERT INTO users (username, email, password_hash, role, full_name, department)
-        VALUES (?, ?, ?, ?, ?, ?)
-      `);
-      stmt.run(user.username, user.email, hashedPassword, user.role, user.full_name, user.department);
-      console.log(`Created ${user.role}: ${user.username} / ${user.password}`);
-    } catch (error) {
-      console.error(`Error creating user ${user.username}:`, error);
-    }
+  for (const user of defaultUsers) {
+    user.passwordHash = await bcrypt.hash(user.password, 10);
+    delete user.password;
   }
+
+  await writeJsonFile(USERS_FILE, defaultUsers);
+  console.log('Default users created:');
+  console.log('  Data Analyst: admin / pakpro123');
+  console.log('  Data Analyst: analyst1 / analyst123');
+  console.log('  Field Auditor: auditor1 / auditor123');
 }
 
-// Enhanced JWT middleware
+// JWT middleware
 function authenticateToken(req, res, next) {
   const authHeader = req.headers['authorization'];
   const token = authHeader && authHeader.split(' ')[1];
@@ -186,15 +134,19 @@ function authenticateToken(req, res, next) {
     return res.status(401).json({ error: 'Access token required' });
   }
 
-  jwt.verify(token, JWT_SECRET, (err, user) => {
+  jwt.verify(token, JWT_SECRET, async (err, user) => {
     if (err) {
       return res.status(403).json({ error: 'Invalid token' });
     }
     
     // Update last login
     try {
-      const stmt = db.prepare("UPDATE users SET last_login = CURRENT_TIMESTAMP WHERE id = ?");
-      stmt.run(user.userId);
+      const users = await readJsonFile(USERS_FILE, []);
+      const userIndex = users.findIndex(u => u.id === user.userId);
+      if (userIndex >= 0) {
+        users[userIndex].lastLogin = new Date().toISOString();
+        await writeJsonFile(USERS_FILE, users);
+      }
     } catch (error) {
       console.error('Error updating last login:', error);
     }
@@ -214,27 +166,43 @@ function requireRole(roles) {
   };
 }
 
-// Activity logging function
-function logActivity(auditId, userId, activityType, description, oldStatus = null, newStatus = null) {
+// Activity logging
+async function logActivity(auditId, userId, activityType, description, oldStatus = null, newStatus = null) {
   try {
-    const stmt = db.prepare(`
-      INSERT INTO audit_activities (audit_id, user_id, activity_type, description, old_status, new_status)
-      VALUES (?, ?, ?, ?, ?, ?)
-    `);
-    stmt.run(auditId, userId, activityType, description, oldStatus, newStatus);
+    const activities = await readJsonFile(ACTIVITIES_FILE, []);
+    const newActivity = {
+      id: Date.now(),
+      auditId,
+      userId,
+      activityType,
+      description,
+      oldStatus,
+      newStatus,
+      createdAt: new Date().toISOString()
+    };
+    activities.push(newActivity);
+    await writeJsonFile(ACTIVITIES_FILE, activities);
   } catch (error) {
     console.error('Error logging activity:', error);
   }
 }
 
 // Notification function
-function createNotification(userId, auditId, type, title, message) {
+async function createNotification(userId, auditId, type, title, message) {
   try {
-    const stmt = db.prepare(`
-      INSERT INTO notifications (user_id, audit_id, type, title, message)
-      VALUES (?, ?, ?, ?, ?)
-    `);
-    stmt.run(userId, auditId, type, title, message);
+    const notifications = await readJsonFile(NOTIFICATIONS_FILE, []);
+    const newNotification = {
+      id: Date.now(),
+      userId,
+      auditId,
+      type,
+      title,
+      message,
+      isRead: false,
+      createdAt: new Date().toISOString()
+    };
+    notifications.push(newNotification);
+    await writeJsonFile(NOTIFICATIONS_FILE, notifications);
   } catch (error) {
     console.error('Error creating notification:', error);
   }
@@ -242,7 +210,16 @@ function createNotification(userId, auditId, type, title, message) {
 
 // Routes
 
-// Enhanced login with role information
+// Health check
+app.get('/api/health', (req, res) => {
+  res.json({ 
+    status: 'OK', 
+    message: 'PAKPRO Audit API is running',
+    timestamp: new Date().toISOString()
+  });
+});
+
+// User login
 app.post('/api/login', async (req, res) => {
   const { username, password } = req.body;
 
@@ -251,14 +228,14 @@ app.post('/api/login', async (req, res) => {
   }
 
   try {
-    const stmt = db.prepare("SELECT * FROM users WHERE username = ? AND is_active = 1");
-    const user = stmt.get(username);
+    const users = await readJsonFile(USERS_FILE, []);
+    const user = users.find(u => u.username === username && u.isActive);
 
     if (!user) {
       return res.status(401).json({ error: 'Invalid credentials or account disabled' });
     }
 
-    const validPassword = await bcrypt.compare(password, user.password_hash);
+    const validPassword = await bcrypt.compare(password, user.passwordHash);
     if (!validPassword) {
       return res.status(401).json({ error: 'Invalid credentials' });
     }
@@ -277,7 +254,7 @@ app.post('/api/login', async (req, res) => {
         username: user.username,
         email: user.email,
         role: user.role,
-        fullName: user.full_name,
+        fullName: user.fullName,
         department: user.department
       }
     });
@@ -287,7 +264,7 @@ app.post('/api/login', async (req, res) => {
   }
 });
 
-// Create new user (analysts only)
+// Create new user
 app.post('/api/users/create', authenticateToken, requireRole(['data_analyst']), async (req, res) => {
   try {
     const { username, email, password, role, fullName, department, phone } = req.body;
@@ -300,25 +277,34 @@ app.post('/api/users/create', authenticateToken, requireRole(['data_analyst']), 
       return res.status(400).json({ error: 'Invalid role specified' });
     }
 
-    const hashedPassword = await bcrypt.hash(password, 10);
-
-    try {
-      const stmt = db.prepare(`
-        INSERT INTO users (username, email, password_hash, role, full_name, department, phone)
-        VALUES (?, ?, ?, ?, ?, ?, ?)
-      `);
-      const result = stmt.run(username, email, hashedPassword, role, fullName, department, phone);
-
-      res.status(201).json({ 
-        message: 'User created successfully',
-        userId: result.lastInsertRowid
-      });
-    } catch (dbError) {
-      if (dbError.message.includes('UNIQUE constraint failed')) {
-        return res.status(400).json({ error: 'Username or email already exists' });
-      }
-      throw dbError;
+    const users = await readJsonFile(USERS_FILE, []);
+    
+    // Check for existing username or email
+    if (users.find(u => u.username === username || u.email === email)) {
+      return res.status(400).json({ error: 'Username or email already exists' });
     }
+
+    const hashedPassword = await bcrypt.hash(password, 10);
+    const newUser = {
+      id: Math.max(...users.map(u => u.id), 0) + 1,
+      username,
+      email,
+      passwordHash: hashedPassword,
+      role,
+      fullName,
+      department,
+      phone,
+      isActive: true,
+      createdAt: new Date().toISOString()
+    };
+
+    users.push(newUser);
+    await writeJsonFile(USERS_FILE, users);
+
+    res.status(201).json({ 
+      message: 'User created successfully',
+      userId: newUser.id
+    });
   } catch (error) {
     console.error('User creation error:', error);
     res.status(500).json({ error: 'Server error' });
@@ -326,43 +312,42 @@ app.post('/api/users/create', authenticateToken, requireRole(['data_analyst']), 
 });
 
 // Get dashboard statistics
-app.get('/api/dashboard/stats', authenticateToken, (req, res) => {
+app.get('/api/dashboard/stats', authenticateToken, async (req, res) => {
   try {
+    const audits = await readJsonFile(AUDITS_FILE, []);
     const stats = {};
 
     if (req.user.role === 'data_analyst') {
       // Analyst dashboard
-      const totalAudits = db.prepare("SELECT COUNT(*) as count FROM audits").get().count;
-      const pendingReview = db.prepare("SELECT COUNT(*) as count FROM audits WHERE status = 'pending_review'").get().count;
-      const inProgress = db.prepare("SELECT COUNT(*) as count FROM audits WHERE status IN ('draft', 'in_progress')").get().count;
-      const completed = db.prepare("SELECT COUNT(*) as count FROM audits WHERE status = 'finalized'").get().count;
-      
-      stats.totalAudits = totalAudits;
-      stats.pendingReview = pendingReview;
-      stats.inProgress = inProgress;
-      stats.completed = completed;
+      stats.totalAudits = audits.length;
+      stats.pendingReview = audits.filter(a => a.status === 'pending_review').length;
+      stats.inProgress = audits.filter(a => ['draft', 'in_progress'].includes(a.status)).length;
+      stats.completed = audits.filter(a => a.status === 'finalized').length;
       
       // Recent activity
-      const recentActivity = db.prepare(`
-        SELECT a.*, u.full_name as user_name
-        FROM audit_activities a
-        JOIN users u ON a.user_id = u.id
-        ORDER BY a.created_at DESC
-        LIMIT 10
-      `).all();
+      const activities = await readJsonFile(ACTIVITIES_FILE, []);
+      const users = await readJsonFile(USERS_FILE, []);
+      
+      const recentActivity = activities
+        .sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt))
+        .slice(0, 10)
+        .map(activity => {
+          const user = users.find(u => u.id === activity.userId);
+          return {
+            ...activity,
+            userName: user ? user.fullName : 'Unknown User'
+          };
+        });
+      
       stats.recentActivity = recentActivity;
       
     } else {
       // Field auditor dashboard
-      const myAudits = db.prepare("SELECT COUNT(*) as count FROM audits WHERE created_by = ?").get(req.user.userId).count;
-      const myDrafts = db.prepare("SELECT COUNT(*) as count FROM audits WHERE created_by = ? AND status = 'draft'").get(req.user.userId).count;
-      const mySubmitted = db.prepare("SELECT COUNT(*) as count FROM audits WHERE created_by = ? AND status IN ('pending_review', 'in_review')").get(req.user.userId).count;
-      const myCompleted = db.prepare("SELECT COUNT(*) as count FROM audits WHERE created_by = ? AND status = 'finalized'").get(req.user.userId).count;
-      
-      stats.myAudits = myAudits;
-      stats.myDrafts = myDrafts;
-      stats.mySubmitted = mySubmitted;
-      stats.myCompleted = myCompleted;
+      const myAudits = audits.filter(a => a.createdBy === req.user.userId);
+      stats.myAudits = myAudits.length;
+      stats.myDrafts = myAudits.filter(a => a.status === 'draft').length;
+      stats.mySubmitted = myAudits.filter(a => ['pending_review', 'in_review'].includes(a.status)).length;
+      stats.myCompleted = myAudits.filter(a => a.status === 'finalized').length;
     }
 
     res.json(stats);
@@ -372,24 +357,19 @@ app.get('/api/dashboard/stats', authenticateToken, (req, res) => {
   }
 });
 
-// Enhanced audit creation with workflow
-app.post('/api/audits', authenticateToken, (req, res) => {
-  const { id, status, generalInfo, validation, conclusions, analystNotes, assignedAnalyst } = req.body;
-  const auditId = id || `AUDIT-${Date.now()}`;
-  const userId = req.user.userId;
-
-  const entityName = generalInfo?.entityName || '';
-  const contractRef = generalInfo?.contractRef || '';
-  const location = generalInfo?.entityAddress || '';
-
+// Create or update audit
+app.post('/api/audits', authenticateToken, async (req, res) => {
   try {
-    // Check if audit exists
-    const existingStmt = db.prepare("SELECT * FROM audits WHERE id = ?");
-    const existingAudit = existingStmt.get(auditId);
+    const { id, status, generalInfo, validation, conclusions, analystNotes, assignedAnalyst } = req.body;
+    const auditId = id || `AUDIT-${Date.now()}`;
+    const userId = req.user.userId;
 
-    const generalInfoJson = JSON.stringify(generalInfo || {});
-    const validationJson = JSON.stringify(validation || {});
-    const conclusionsJson = JSON.stringify(conclusions || {});
+    const audits = await readJsonFile(AUDITS_FILE, []);
+    const existingAuditIndex = audits.findIndex(a => a.id === auditId);
+
+    const entityName = generalInfo?.entityName || '';
+    const contractRef = generalInfo?.contractRef || '';
+    const location = generalInfo?.entityAddress || '';
 
     // Calculate completion percentage
     const fields = [
@@ -401,39 +381,56 @@ app.post('/api/audits', authenticateToken, (req, res) => {
     const completedFields = fields.filter(field => field && field.trim()).length;
     const completionPercentage = Math.round((completedFields / fields.length) * 100);
 
-    if (existingAudit) {
-      // Update existing audit
-      const updateStmt = db.prepare(`
-        UPDATE audits SET 
-        status = ?, entity_name = ?, contract_ref = ?, location = ?,
-        general_info = ?, validation_data = ?, conclusions_data = ?,
-        analyst_notes = ?, assigned_analyst = ?, completion_percentage = ?,
-        updated_at = CURRENT_TIMESTAMP,
-        submitted_at = CASE WHEN status = 'pending_review' AND ? != 'pending_review' THEN CURRENT_TIMESTAMP ELSE submitted_at END,
-        reviewed_at = CASE WHEN status = 'in_review' AND ? != 'in_review' THEN CURRENT_TIMESTAMP ELSE reviewed_at END,
-        finalized_at = CASE WHEN status = 'finalized' AND ? != 'finalized' THEN CURRENT_TIMESTAMP ELSE finalized_at END
-        WHERE id = ?
-      `);
-      
-      updateStmt.run(status, entityName, contractRef, location, generalInfoJson, validationJson, 
-                    conclusionsJson, analystNotes, assignedAnalyst, completionPercentage,
-                    existingAudit.status, existingAudit.status, existingAudit.status, auditId);
+    const auditData = {
+      id: auditId,
+      status: status || 'draft',
+      entityName,
+      contractRef,
+      location,
+      generalInfo: generalInfo || {},
+      validation: validation || {},
+      conclusions: conclusions || {},
+      analystNotes,
+      assignedAnalyst,
+      completionPercentage,
+      updatedAt: new Date().toISOString()
+    };
 
-      // Log status change if it changed
+    if (existingAuditIndex >= 0) {
+      // Update existing audit
+      const existingAudit = audits[existingAuditIndex];
+      auditData.createdBy = existingAudit.createdBy;
+      auditData.createdAt = existingAudit.createdAt;
+      
+      // Update timestamps based on status changes
+      if (status === 'pending_review' && existingAudit.status !== 'pending_review') {
+        auditData.submittedAt = new Date().toISOString();
+      }
+      if (status === 'in_review' && existingAudit.status !== 'in_review') {
+        auditData.reviewedAt = new Date().toISOString();
+      }
+      if (status === 'finalized' && existingAudit.status !== 'finalized') {
+        auditData.finalizedAt = new Date().toISOString();
+      }
+
+      audits[existingAuditIndex] = auditData;
+
+      // Log status change
       if (existingAudit.status !== status) {
-        logActivity(auditId, userId, 'status_change', 
-                   `Status changed from ${existingAudit.status} to ${status}`, 
-                   existingAudit.status, status);
+        await logActivity(auditId, userId, 'status_change', 
+                         `Status changed from ${existingAudit.status} to ${status}`, 
+                         existingAudit.status, status);
 
         // Create notifications for status changes
         if (status === 'pending_review' && req.user.role === 'field_auditor') {
-          // Notify analysts when audit is submitted for review
-          const analysts = db.prepare("SELECT id FROM users WHERE role = 'data_analyst' AND is_active = 1").all();
-          analysts.forEach(analyst => {
-            createNotification(analyst.id, auditId, 'audit_submitted', 
-                             'New Audit for Review', 
-                             `Audit ${auditId} has been submitted for review by ${req.user.username}`);
-          });
+          const users = await readJsonFile(USERS_FILE, []);
+          const analysts = users.filter(u => u.role === 'data_analyst' && u.isActive);
+          
+          for (const analyst of analysts) {
+            await createNotification(analyst.id, auditId, 'audit_submitted', 
+                                   'New Audit for Review', 
+                                   `Audit ${auditId} has been submitted for review by ${req.user.username}`);
+          }
         }
       }
 
@@ -443,231 +440,215 @@ app.post('/api/audits', authenticateToken, (req, res) => {
       });
     } else {
       // Create new audit
-      const insertStmt = db.prepare(`
-        INSERT INTO audits (id, created_by, status, entity_name, contract_ref, location,
-                           general_info, validation_data, conclusions_data, completion_percentage)
-        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-      `);
-      
-      insertStmt.run(auditId, userId, status, entityName, contractRef, location,
-                    generalInfoJson, validationJson, conclusionsJson, completionPercentage);
+      auditData.createdBy = userId;
+      auditData.createdAt = new Date().toISOString();
+      audits.push(auditData);
 
-      logActivity(auditId, userId, 'created', 'Audit created');
+      await logActivity(auditId, userId, 'created', 'Audit created');
 
       res.status(201).json({
         message: 'Audit created successfully',
         audit: { id: auditId, action: 'created' }
       });
     }
+
+    await writeJsonFile(AUDITS_FILE, audits);
   } catch (error) {
     console.error('Error saving audit:', error);
     res.status(500).json({ error: 'Failed to save audit' });
   }
 });
 
-// Enhanced audit listing with role-based filtering
-app.get('/api/audits', authenticateToken, (req, res) => {
-  const { status, search, assigned_to_me, created_by_me } = req.query;
-
+// Get audits with role-based filtering
+app.get('/api/audits', authenticateToken, async (req, res) => {
   try {
-    let query = `
-      SELECT a.*, 
-             creator.username as created_by_username,
-             creator.full_name as created_by_name,
-             analyst.username as assigned_analyst_username,
-             analyst.full_name as assigned_analyst_name
-      FROM audits a 
-      JOIN users creator ON a.created_by = creator.id
-      LEFT JOIN users analyst ON a.assigned_analyst = analyst.id
-    `;
-    const params = [];
-    const conditions = [];
+    const { status, search, assigned_to_me, created_by_me } = req.query;
+    
+    let audits = await readJsonFile(AUDITS_FILE, []);
+    const users = await readJsonFile(USERS_FILE, []);
 
     // Role-based filtering
     if (req.user.role === 'field_auditor' && !created_by_me) {
-      conditions.push('a.created_by = ?');
-      params.push(req.user.userId);
+      audits = audits.filter(a => a.createdBy === req.user.userId);
     }
 
+    // Apply filters
     if (status) {
-      conditions.push('a.status = ?');
-      params.push(status);
+      audits = audits.filter(a => a.status === status);
     }
 
     if (search) {
-      conditions.push('(a.entity_name LIKE ? OR a.contract_ref LIKE ? OR a.id LIKE ?)');
-      params.push(`%${search}%`, `%${search}%`, `%${search}%`);
+      const searchLower = search.toLowerCase();
+      audits = audits.filter(a => 
+        (a.entityName && a.entityName.toLowerCase().includes(searchLower)) ||
+        (a.contractRef && a.contractRef.toLowerCase().includes(searchLower)) ||
+        (a.id && a.id.toLowerCase().includes(searchLower))
+      );
     }
 
     if (assigned_to_me === 'true') {
-      conditions.push('a.assigned_analyst = ?');
-      params.push(req.user.userId);
+      audits = audits.filter(a => a.assignedAnalyst === req.user.userId);
     }
 
-    if (conditions.length > 0) {
-      query += ' WHERE ' + conditions.join(' AND ');
-    }
+    // Add user information
+    const enrichedAudits = audits.map(audit => {
+      const creator = users.find(u => u.id === audit.createdBy);
+      const analyst = users.find(u => u.id === audit.assignedAnalyst);
+      
+      return {
+        ...audit,
+        createdBy: creator ? creator.username : 'Unknown',
+        createdByName: creator ? creator.fullName : 'Unknown',
+        assignedAnalyst: analyst ? analyst.username : null,
+        assignedAnalystName: analyst ? analyst.fullName : null
+      };
+    });
 
-    query += ' ORDER BY a.updated_at DESC';
+    // Sort by updated date (newest first)
+    enrichedAudits.sort((a, b) => new Date(b.updatedAt) - new Date(a.updatedAt));
 
-    const stmt = db.prepare(query);
-    const rows = stmt.all(...params);
-
-    const audits = rows.map(row => ({
-      id: row.id,
-      status: row.status,
-      priority: row.priority,
-      entityName: row.entity_name,
-      contractRef: row.contract_ref,
-      location: row.location,
-      completionPercentage: row.completion_percentage,
-      createdBy: row.created_by_username,
-      createdByName: row.created_by_name,
-      assignedAnalyst: row.assigned_analyst_username,
-      assignedAnalystName: row.assigned_analyst_name,
-      createdAt: row.created_at,
-      updatedAt: row.updated_at,
-      submittedAt: row.submitted_at,
-      dueDate: row.due_date,
-      generalInfo: row.general_info ? JSON.parse(row.general_info) : {},
-      validation: row.validation_data ? JSON.parse(row.validation_data) : {},
-      conclusions: row.conclusions_data ? JSON.parse(row.conclusions_data) : {},
-      analystNotes: row.analyst_notes
-    }));
-
-    res.json({ audits });
+    res.json({ audits: enrichedAudits });
   } catch (error) {
     console.error('Error fetching audits:', error);
     res.status(500).json({ error: 'Failed to fetch audits' });
   }
 });
 
-// Get notifications
-app.get('/api/notifications', authenticateToken, (req, res) => {
+// Get single audit
+app.get('/api/audits/:id', authenticateToken, async (req, res) => {
   try {
-    const stmt = db.prepare(`
-      SELECT n.*, a.entity_name
-      FROM notifications n
-      LEFT JOIN audits a ON n.audit_id = a.id
-      WHERE n.user_id = ?
-      ORDER BY n.created_at DESC
-      LIMIT 50
-    `);
-    const notifications = stmt.all(req.user.userId);
-
-    res.json({ notifications });
-  } catch (error) {
-    console.error('Error fetching notifications:', error);
-    res.status(500).json({ error: 'Failed to fetch notifications' });
-  }
-});
-
-// Mark notification as read
-app.patch('/api/notifications/:id/read', authenticateToken, (req, res) => {
-  try {
-    const stmt = db.prepare("UPDATE notifications SET is_read = 1 WHERE id = ? AND user_id = ?");
-    const result = stmt.run(req.params.id, req.user.userId);
-
-    if (result.changes === 0) {
-      return res.status(404).json({ error: 'Notification not found' });
+    const auditId = req.params.id;
+    const audits = await readJsonFile(AUDITS_FILE, []);
+    const users = await readJsonFile(USERS_FILE, []);
+    
+    const audit = audits.find(a => a.id === auditId);
+    if (!audit) {
+      return res.status(404).json({ error: 'Audit not found' });
     }
 
-    res.json({ message: 'Notification marked as read' });
+    const creator = users.find(u => u.id === audit.createdBy);
+    const analyst = users.find(u => u.id === audit.assignedAnalyst);
+
+    const enrichedAudit = {
+      ...audit,
+      createdBy: creator ? creator.username : 'Unknown',
+      createdByName: creator ? creator.fullName : 'Unknown',
+      assignedAnalyst: analyst ? analyst.username : null,
+      assignedAnalystName: analyst ? analyst.fullName : null
+    };
+
+    res.json({ audit: enrichedAudit });
   } catch (error) {
-    console.error('Error marking notification as read:', error);
-    res.status(500).json({ error: 'Failed to update notification' });
+    console.error('Error fetching audit:', error);
+    res.status(500).json({ error: 'Failed to fetch audit' });
   }
 });
 
-// Enhanced Excel export with analyst notes and workflow data
-app.get('/api/audits/export', authenticateToken, requireRole(['data_analyst']), (req, res) => {
+// Delete audit
+app.delete('/api/audits/:id', authenticateToken, async (req, res) => {
   try {
-    const stmt = db.prepare(`
-      SELECT a.*, 
-             creator.full_name as created_by_name,
-             analyst.full_name as assigned_analyst_name
-      FROM audits a 
-      JOIN users creator ON a.created_by = creator.id
-      LEFT JOIN users analyst ON a.assigned_analyst = analyst.id
-      ORDER BY a.updated_at DESC
-    `);
-    const rows = stmt.all();
+    const auditId = req.params.id;
+    const audits = await readJsonFile(AUDITS_FILE, []);
+    
+    const auditIndex = audits.findIndex(a => a.id === auditId);
+    if (auditIndex === -1) {
+      return res.status(404).json({ error: 'Audit not found' });
+    }
 
-    if (rows.length === 0) {
+    const audit = audits[auditIndex];
+    
+    // Check permissions
+    if (audit.createdBy !== req.user.userId && req.user.role !== 'data_analyst') {
+      return res.status(403).json({ error: 'Access denied' });
+    }
+
+    audits.splice(auditIndex, 1);
+    await writeJsonFile(AUDITS_FILE, audits);
+
+    res.json({ message: 'Audit deleted successfully' });
+  } catch (error) {
+    console.error('Error deleting audit:', error);
+    res.status(500).json({ error: 'Failed to delete audit' });
+  }
+});
+
+// Export audits to Excel
+app.get('/api/audits/export', authenticateToken, requireRole(['data_analyst']), async (req, res) => {
+  try {
+    const audits = await readJsonFile(AUDITS_FILE, []);
+    const users = await readJsonFile(USERS_FILE, []);
+
+    if (audits.length === 0) {
       return res.status(404).json({ error: 'No audits found to export' });
     }
 
-    // Enhanced Excel data with workflow information
-    const excelData = rows.map(row => {
-      const generalInfo = row.general_info ? JSON.parse(row.general_info) : {};
-      const validation = row.validation_data ? JSON.parse(row.validation_data) : {};
-      const conclusions = row.conclusions_data ? JSON.parse(row.conclusions_data) : {};
+    // Prepare Excel data
+    const excelData = audits.map(audit => {
+      const creator = users.find(u => u.id === audit.createdBy);
+      const analyst = users.find(u => u.id === audit.assignedAnalyst);
 
       return {
-        'Audit ID': row.id,
-        'Status': row.status,
-        'Priority': row.priority,
-        'Completion %': row.completion_percentage,
-        'Entity Name': row.entity_name,
-        'Contract Reference': row.contract_ref,
-        'Location': row.location,
-        'Created By': row.created_by_name,
-        'Assigned Analyst': row.assigned_analyst_name || 'Unassigned',
-        'Created Date': new Date(row.created_at).toLocaleDateString(),
-        'Updated Date': new Date(row.updated_at).toLocaleDateString(),
-        'Submitted Date': row.submitted_at ? new Date(row.submitted_at).toLocaleDateString() : '',
-        'Due Date': row.due_date || '',
+        'Audit ID': audit.id,
+        'Status': audit.status,
+        'Completion %': audit.completionPercentage || 0,
+        'Entity Name': audit.entityName,
+        'Contract Reference': audit.contractRef,
+        'Location': audit.location,
+        'Created By': creator ? creator.fullName : 'Unknown',
+        'Assigned Analyst': analyst ? analyst.fullName : 'Unassigned',
+        'Created Date': new Date(audit.createdAt).toLocaleDateString(),
+        'Updated Date': new Date(audit.updatedAt).toLocaleDateString(),
+        'Submitted Date': audit.submittedAt ? new Date(audit.submittedAt).toLocaleDateString() : '',
         
         // General Information
-        'Entity Address': generalInfo.entityAddress || '',
-        'Verification Period': generalInfo.verificationPeriod || '',
-        'Project Title': generalInfo.projectTitle || '',
-        'Auditee Team Leader': generalInfo.auditeeTeamLeader || '',
-        'Start Date': generalInfo.startDate || '',
-        'On-site Date': generalInfo.onSiteDate || '',
+        'Entity Address': audit.generalInfo?.entityAddress || '',
+        'Verification Period': audit.generalInfo?.verificationPeriod || '',
+        'Project Title': audit.generalInfo?.projectTitle || '',
+        'Auditee Team Leader': audit.generalInfo?.auditeeTeamLeader || '',
+        'Start Date': audit.generalInfo?.startDate || '',
+        'On-site Date': audit.generalInfo?.onSiteDate || '',
         
         // Validation
-        'Spot Checks Conducted': validation.spotChecks || '',
-        'Rejected Material': validation.rejectedMaterial || '',
-        'Rejection Details': validation.rejectionDetails || '',
-        'Contract Amendments': validation.contractAmendments || '',
-        'Amendment Details': validation.amendmentDetails || '',
-        'Additional Comments': validation.additionalComments || '',
+        'Spot Checks Conducted': audit.validation?.spotChecks || '',
+        'Rejected Material': audit.validation?.rejectedMaterial || '',
+        'Rejection Details': audit.validation?.rejectionDetails || '',
+        'Contract Amendments': audit.validation?.contractAmendments || '',
+        'Amendment Details': audit.validation?.amendmentDetails || '',
+        'Additional Comments': audit.validation?.additionalComments || '',
         
         // Conclusions
-        'Assessment Status': conclusions.assessmentStatus || '',
-        'Audit Team Leader': conclusions.auditTeamLeader || '',
-        'Audit Date': conclusions.auditDate || '',
-        'Conclusion Comments': conclusions.conclusionComments || '',
+        'Assessment Status': audit.conclusions?.assessmentStatus || '',
+        'Audit Team Leader': audit.conclusions?.auditTeamLeader || '',
+        'Audit Date': audit.conclusions?.auditDate || '',
+        'Conclusion Comments': audit.conclusions?.conclusionComments || '',
         
         // Analyst Notes
-        'Analyst Notes': row.analyst_notes || ''
+        'Analyst Notes': audit.analystNotes || ''
       };
     });
 
-    // Create workbook with multiple sheets
+    // Create workbook
     const workbook = XLSX.utils.book_new();
-    
-    // Main data sheet
     const worksheet = XLSX.utils.json_to_sheet(excelData);
+    
+    // Auto-size columns
     const colWidths = Object.keys(excelData[0] || {}).map(key => ({ wch: Math.max(key.length, 15) }));
     worksheet['!cols'] = colWidths;
+    
     XLSX.utils.book_append_sheet(workbook, worksheet, 'Audit Data');
 
-    // Summary statistics sheet
+    // Summary sheet
     const summaryData = [
       ['PAKPRO Audit Summary Report'],
       ['Generated:', new Date().toLocaleString()],
       [''],
       ['Status Distribution'],
-      ['Draft', rows.filter(r => r.status === 'draft').length],
-      ['Pending Review', rows.filter(r => r.status === 'pending_review').length],
-      ['In Review', rows.filter(r => r.status === 'in_review').length],
-      ['Finalized', rows.filter(r => r.status === 'finalized').length],
+      ['Draft', audits.filter(a => a.status === 'draft').length],
+      ['Pending Review', audits.filter(a => a.status === 'pending_review').length],
+      ['In Review', audits.filter(a => a.status === 'in_review').length],
+      ['Finalized', audits.filter(a => a.status === 'finalized').length],
       [''],
-      ['Completion Statistics'],
-      ['Average Completion %', Math.round(rows.reduce((sum, r) => sum + r.completion_percentage, 0) / rows.length)],
-      ['Total Audits', rows.length]
+      ['Total Audits', audits.length]
     ];
     
     const summarySheet = XLSX.utils.aoa_to_sheet(summaryData);
@@ -676,7 +657,7 @@ app.get('/api/audits/export', authenticateToken, requireRole(['data_analyst']), 
 
     const buffer = XLSX.write(workbook, { type: 'buffer', bookType: 'xlsx' });
 
-    res.setHeader('Content-Disposition', `attachment; filename=PAKPRO_Full_Export_${new Date().toISOString().split('T')[0]}.xlsx`);
+    res.setHeader('Content-Disposition', `attachment; filename=PAKPRO_Export_${new Date().toISOString().split('T')[0]}.xlsx`);
     res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
 
     res.send(buffer);
@@ -686,24 +667,122 @@ app.get('/api/audits/export', authenticateToken, requireRole(['data_analyst']), 
   }
 });
 
-// All other existing routes remain the same...
-// (Include all previous routes: health check, user info, single audit, delete, etc.)
+// Export single audit
+app.get('/api/audits/:id/export', authenticateToken, async (req, res) => {
+  try {
+    const auditId = req.params.id;
+    const audits = await readJsonFile(AUDITS_FILE, []);
+    const users = await readJsonFile(USERS_FILE, []);
+    
+    const audit = audits.find(a => a.id === auditId);
+    if (!audit) {
+      return res.status(404).json({ error: 'Audit not found' });
+    }
+
+    const creator = users.find(u => u.id === audit.createdBy);
+
+    // Create formatted audit report
+    const auditReport = [
+      ['PAKPRO DIGITAL VERIFICATION AUDIT REPORT'],
+      [''],
+      ['Audit ID:', audit.id],
+      ['Status:', audit.status],
+      ['Created By:', creator ? creator.fullName : 'Unknown'],
+      ['Created Date:', new Date(audit.createdAt).toLocaleDateString()],
+      [''],
+      ['GENERAL INFORMATION'],
+      ['Entity Name:', audit.entityName],
+      ['Contract Reference:', audit.contractRef],
+      ['Entity Address:', audit.generalInfo?.entityAddress || ''],
+      ['Verification Period:', audit.generalInfo?.verificationPeriod || ''],
+      ['Project Title:', audit.generalInfo?.projectTitle || ''],
+      ['Auditee Team Leader:', audit.generalInfo?.auditeeTeamLeader || ''],
+      ['Start Date:', audit.generalInfo?.startDate || ''],
+      ['On-site Assessment Date:', audit.generalInfo?.onSiteDate || ''],
+      [''],
+      ['VALIDATION AND VERIFICATION'],
+      ['Spot-checks conducted by PAKPRO:', audit.validation?.spotChecks || ''],
+      ['Rejected post-consumer material:', audit.validation?.rejectedMaterial || ''],
+      ['Rejection Details:', audit.validation?.rejectionDetails || ''],
+      ['Contract amendments to be captured:', audit.validation?.contractAmendments || ''],
+      ['Amendment Details:', audit.validation?.amendmentDetails || ''],
+      ['Additional Comments:', audit.validation?.additionalComments || ''],
+      [''],
+      ['CONCLUSIONS'],
+      ['Assessment Status:', audit.conclusions?.assessmentStatus || ''],
+      ['PAKPRO Audit Team Leader:', audit.conclusions?.auditTeamLeader || ''],
+      ['Audit Date:', audit.conclusions?.auditDate || ''],
+      ['Additional Comments:', audit.conclusions?.conclusionComments || '']
+    ];
+
+    const workbook = XLSX.utils.book_new();
+    const worksheet = XLSX.utils.aoa_to_sheet(auditReport);
+    worksheet['!cols'] = [{ wch: 30 }, { wch: 50 }];
+    XLSX.utils.book_append_sheet(workbook, worksheet, 'Audit Report');
+
+    const buffer = XLSX.write(workbook, { type: 'buffer', bookType: 'xlsx' });
+
+    res.setHeader('Content-Disposition', `attachment; filename=PAKPRO_Audit_${audit.id}.xlsx`);
+    res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
+
+    res.send(buffer);
+  } catch (error) {
+    console.error('Export error:', error);
+    res.status(500).json({ error: 'Failed to export audit' });
+  }
+});
+
+// Get current user info
+app.get('/api/user', authenticateToken, async (req, res) => {
+  try {
+    const users = await readJsonFile(USERS_FILE, []);
+    const user = users.find(u => u.id === req.user.userId);
+
+    if (!user) {
+      return res.status(404).json({ error: 'User not found' });
+    }
+
+    res.json({ 
+      user: {
+        id: user.id,
+        username: user.username,
+        email: user.email,
+        role: user.role,
+        fullName: user.fullName,
+        department: user.department,
+        createdAt: user.createdAt
+      }
+    });
+  } catch (error) {
+    console.error('Error fetching user:', error);
+    res.status(500).json({ error: 'Failed to fetch user' });
+  }
+});
+
+// Serve frontend
+app.get('*', (req, res) => {
+  res.sendFile(path.join(__dirname, 'public', 'index.html'));
+});
+
+// Error handling middleware
+app.use((err, req, res, next) => {
+  console.error(err.stack);
+  res.status(500).json({ error: 'Something went wrong!' });
+});
 
 // Initialize and start server
-try {
-  initializeDatabase();
-  
-  app.listen(PORT, () => {
-    console.log(`PAKPRO Enhanced Audit Server running on port ${PORT}`);
-    console.log(`Access the application at: http://localhost:${PORT}`);
-    console.log('Default users created:');
-    console.log('  Data Analyst: admin / pakpro123');
-    console.log('  Data Analyst: analyst1 / analyst123');
-    console.log('  Field Auditor: auditor1 / auditor123');
-  });
-} catch (error) {
-  console.error('Failed to start server:', error);
-  process.exit(1);
+async function startServer() {
+  try {
+    await initializeDatabase();
+    
+    app.listen(PORT, () => {
+      console.log(`PAKPRO Audit Server running on port ${PORT}`);
+      console.log(`Access the application at: http://localhost:${PORT}`);
+    });
+  } catch (error) {
+    console.error('Failed to start server:', error);
+    process.exit(1);
+  }
 }
 
-module.exports = app;
+startServer();
