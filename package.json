@@ -1,0 +1,35 @@
+{
+    "name": "pakpro-audit-system",
+    "version": "1.0.0",
+    "description": "PAKPRO Digital Verification Audit System - Multi-user web application",
+    "main": "server.js",
+    "scripts": {
+        "start": "node server.js",
+        "dev": "nodemon server.js",
+        "build": "echo 'No build step required'"
+    },
+    "keywords": [
+        "audit",
+        "verification",
+        "pakpro",
+        "multi-user",
+        "web-app"
+    ],
+    "author": "PAKPRO Team",
+    "license": "MIT",
+    "dependencies": {
+        "bcrypt": "^5.1.1",
+        "better-sqlite3": "^9.2.2",
+        "cors": "^2.8.5",
+        "express": "^4.18.2",
+        "express-rate-limit": "^7.1.5",
+        "jsonwebtoken": "^9.0.2",
+        "xlsx": "^0.18.5"
+    },
+    "devDependencies": {
+        "nodemon": "^3.0.2"
+    },
+    "engines": {
+        "node": ">=16.0.0"
+    }
+}
