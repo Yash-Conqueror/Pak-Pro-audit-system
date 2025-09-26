@@ -1,1375 +1,2693 @@
-<!DOCTYPE html>
+<!DOCTYPE html> 
 <html lang="en">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>PAKPRO Digital Verification Audit System</title>
+    <title>PAKPRO Kenya Digital Verification Audit System</title>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
     <style>
-        * { margin: 0; padding: 0; box-sizing: border-box; }
-        
-        body {
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            min-height: 100vh;
-            line-height: 1.6;
+        /* ========================================
+           MODERN DESIGN SYSTEM
+        ======================================== */
+        :root {
+            --primary-color: #2563eb;
+            --primary-dark: #1d4ed8;
+            --primary-light: #60a5fa;
+            --secondary-color: #10b981;
+            --accent-color: #f59e0b;
+            --danger-color: #ef4444;
+            --warning-color: #f97316;
+            --success-color: #22c55e;
+            
+            --gray-50: #f9fafb;
+            --gray-100: #f3f4f6;
+            --gray-200: #e5e7eb;
+            --gray-300: #d1d5db;
+            --gray-400: #9ca3af;
+            --gray-500: #6b7280;
+            --gray-600: #4b5563;
+            --gray-700: #374151;
+            --gray-800: #1f2937;
+            --gray-900: #111827;
+            
+            --border-radius: 12px;
+            --border-radius-lg: 16px;
+            --shadow-sm: 0 1px 2px 0 rgb(0 0 0 / 0.05);
+            --shadow-md: 0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1);
+            --shadow-lg: 0 10px 15px -3px rgb(0 0 0 / 0.1), 0 4px 6px -4px rgb(0 0 0 / 0.1);
+            --shadow-xl: 0 20px 25px -5px rgb(0 0 0 / 0.1), 0 8px 10px -6px rgb(0 0 0 / 0.1);
+            
+            --transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
         }
 
-        .container {
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', -apple-system, BlinkMacSystemFont, 'Roboto', sans-serif;
+            background: linear-gradient(135deg, #f8fafc 0%, #e2e8f0 100%);
+            color: var(--gray-800);
+            line-height: 1.6;
+            overflow-x: hidden;
+        }
+
+        /* ========================================
+           GLASSMORPHISM EFFECTS
+        ======================================== */
+        .glass {
+            background: rgba(255, 255, 255, 0.8);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+        }
+
+        .glass-dark {
+            background: rgba(31, 41, 55, 0.8);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            color: white;
+        }
+
+        /* ========================================
+           HEADER & NAVIGATION
+        ======================================== */
+        .header {
+            background: linear-gradient(135deg, var(--primary-color) 0%, var(--primary-dark) 100%);
+            color: white;
+            padding: 1.5rem 0;
+            box-shadow: var(--shadow-lg);
+            position: sticky;
+            top: 0;
+            z-index: 1000;
+        }
+
+        .header-content {
             max-width: 1400px;
             margin: 0 auto;
-            background: white;
-            min-height: 100vh;
-            box-shadow: 0 0 20px rgba(0,0,0,0.1);
-        }
-
-        .header {
-            background: linear-gradient(45deg, #2c3e50, #34495e);
-            color: white;
-            padding: 20px;
             display: flex;
             justify-content: space-between;
             align-items: center;
+            padding: 0 2rem;
         }
 
-        .header h1 {
-            font-size: 2rem;
-            font-weight: 300;
+        .logo-section {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+        }
+
+        .logo {
+            width: 50px;
+            height: 50px;
+            background: linear-gradient(135deg, #ffffff 0%, var(--primary-light) 100%);
+            border-radius: var(--border-radius);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.5rem;
+            font-weight: bold;
+            color: var(--primary-color);
+            box-shadow: var(--shadow-md);
+        }
+
+        .header-text h1 {
+            font-size: 1.75rem;
+            font-weight: 700;
+            margin-bottom: 0.25rem;
+        }
+
+        .header-text p {
+            opacity: 0.9;
+            font-size: 0.875rem;
+        }
+
+        .user-section {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+        }
+
+        .theme-toggle {
+            background: rgba(255, 255, 255, 0.2);
+            border: none;
+            color: white;
+            padding: 0.5rem;
+            border-radius: 50%;
+            cursor: pointer;
+            transition: var(--transition);
+        }
+
+        .theme-toggle:hover {
+            background: rgba(255, 255, 255, 0.3);
+            transform: scale(1.1);
         }
 
         .user-info {
             display: flex;
             align-items: center;
-            gap: 15px;
+            gap: 0.75rem;
+            background: rgba(255, 255, 255, 0.1);
+            padding: 0.5rem 1rem;
+            border-radius: var(--border-radius);
+            border: 1px solid rgba(255, 255, 255, 0.2);
         }
 
-        .login-container {
+        .user-avatar {
+            width: 40px;
+            height: 40px;
+            background: var(--accent-color);
+            border-radius: 50%;
             display: flex;
-            justify-content: center;
             align-items: center;
-            min-height: 100vh;
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-        }
-
-        .login-form {
-            background: white;
-            padding: 40px;
-            border-radius: 15px;
-            box-shadow: 0 20px 40px rgba(0,0,0,0.1);
-            width: 100%;
-            max-width: 400px;
-        }
-
-        .login-form h2 {
-            text-align: center;
-            margin-bottom: 30px;
-            color: #2c3e50;
-        }
-
-        .nav-tabs {
-            display: flex;
-            background: #f8f9fa;
-            border-bottom: 2px solid #e9ecef;
-            overflow-x: auto;
-        }
-
-        .nav-tab {
-            padding: 15px 25px;
-            cursor: pointer;
-            border: none;
-            background: transparent;
-            font-size: 1rem;
-            font-weight: 500;
-            color: #6c757d;
-            transition: all 0.3s ease;
-            white-space: nowrap;
-        }
-
-        .nav-tab:hover {
-            background: #e9ecef;
-            color: #495057;
-        }
-
-        .nav-tab.active {
-            background: #667eea;
+            justify-content: center;
+            font-weight: bold;
             color: white;
-            border-bottom: 3px solid #5a67d8;
         }
 
-        .content {
-            padding: 30px;
-            max-height: 70vh;
-            overflow-y: auto;
-        }
-
-        .section {
-            display: none;
-        }
-
-        .section.active {
-            display: block;
-        }
-
-        .form-group {
-            margin-bottom: 20px;
-        }
-
-        .form-row {
+        /* ========================================
+           MAIN LAYOUT
+        ======================================== */
+        .main-container {
+            max-width: 1400px;
+            margin: 2rem auto;
+            padding: 0 2rem;
             display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
-            gap: 20px;
-            margin-bottom: 20px;
+            grid-template-columns: 300px 1fr;
+            gap: 2rem;
         }
 
-        label {
-            display: block;
+        /* ========================================
+           SIDEBAR
+        ======================================== */
+        .sidebar {
+            background: white;
+            border-radius: var(--border-radius-lg);
+            box-shadow: var(--shadow-lg);
+            padding: 2rem;
+            height: fit-content;
+            position: sticky;
+            top: 120px;
+        }
+
+        .sidebar h3 {
+            color: var(--gray-700);
+            margin-bottom: 1.5rem;
+            font-size: 1.125rem;
             font-weight: 600;
-            margin-bottom: 8px;
-            color: #2c3e50;
         }
 
-        input, select, textarea {
-            width: 100%;
-            padding: 12px;
-            border: 2px solid #e9ecef;
-            border-radius: 8px;
-            font-size: 1rem;
-            transition: border-color 0.3s ease;
+        .nav-menu {
+            list-style: none;
         }
 
-        input:focus, select:focus, textarea:focus {
-            outline: none;
-            border-color: #667eea;
-            box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+        .nav-item {
+            margin-bottom: 0.5rem;
         }
 
-        textarea {
-            resize: vertical;
-            min-height: 100px;
-        }
-
-        .btn {
-            padding: 12px 25px;
-            border: none;
-            border-radius: 8px;
-            font-size: 1rem;
+        .nav-link {
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+            padding: 0.75rem 1rem;
+            color: var(--gray-600);
+            text-decoration: none;
+            border-radius: var(--border-radius);
+            transition: var(--transition);
             font-weight: 500;
             cursor: pointer;
-            transition: all 0.3s ease;
-            margin: 5px;
+        }
+
+        .nav-link:hover,
+        .nav-link.active {
+            background: linear-gradient(135deg, var(--primary-color) 0%, var(--primary-dark) 100%);
+            color: white;
+            transform: translateX(4px);
+        }
+
+        .progress-section {
+            margin-top: 2rem;
+            padding-top: 2rem;
+            border-top: 1px solid var(--gray-200);
+        }
+
+        .progress-bar {
+            background: var(--gray-200);
+            border-radius: 50px;
+            height: 8px;
+            overflow: hidden;
+            margin-bottom: 1rem;
+        }
+
+        .progress-fill {
+            background: linear-gradient(90deg, var(--secondary-color) 0%, var(--primary-color) 100%);
+            height: 100%;
+            border-radius: 50px;
+            transition: width 0.6s cubic-bezier(0.4, 0, 0.2, 1);
+            width: 0%;
+        }
+
+        .progress-text {
+            font-size: 0.875rem;
+            color: var(--gray-600);
+            text-align: center;
+        }
+
+        /* ========================================
+           MAIN CONTENT AREA
+        ======================================== */
+        .content-area {
+            background: white;
+            border-radius: var(--border-radius-lg);
+            box-shadow: var(--shadow-lg);
+            overflow: hidden;
+        }
+
+        /* ========================================
+           LOGIN FORM (BEAUTIFUL DESIGN)
+        ======================================== */
+        .login-container {
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            padding: 2rem;
+        }
+
+        .login-card {
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(20px);
+            padding: 3rem;
+            border-radius: 24px;
+            box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
+            width: 100%;
+            max-width: 450px;
+            border: 1px solid rgba(255, 255, 255, 0.2);
+        }
+
+        .login-header {
+            text-align: center;
+            margin-bottom: 2rem;
+        }
+
+        .login-header .logo {
+            margin: 0 auto 1rem;
+            width: 80px;
+            height: 80px;
+            font-size: 2rem;
+        }
+
+        .login-header h1 {
+            color: var(--gray-800);
+            font-size: 1.875rem;
+            font-weight: 700;
+            margin-bottom: 0.5rem;
+        }
+
+        .login-header p {
+            color: var(--gray-600);
+        }
+
+        /* ========================================
+           FORM STYLING
+        ======================================== */
+        .form-group {
+            margin-bottom: 1.5rem;
+        }
+
+        .form-label {
+            display: block;
+            margin-bottom: 0.5rem;
+            font-weight: 600;
+            color: var(--gray-700);
+            font-size: 0.875rem;
+        }
+
+        .form-input,
+        .form-select,
+        .form-textarea {
+            width: 100%;
+            padding: 0.875rem 1rem;
+            border: 2px solid var(--gray-200);
+            border-radius: var(--border-radius);
+            font-size: 1rem;
+            transition: var(--transition);
+            background: white;
+        }
+
+        .form-input:focus,
+        .form-select:focus,
+        .form-textarea:focus {
+            outline: none;
+            border-color: var(--primary-color);
+            box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.1);
+        }
+
+        .form-input.error,
+        .form-select.error,
+        .form-textarea.error {
+            border-color: var(--danger-color);
+            box-shadow: 0 0 0 3px rgba(239, 68, 68, 0.1);
+        }
+
+        .input-group {
+            position: relative;
+        }
+
+        .input-icon {
+            position: absolute;
+            left: 1rem;
+            top: 50%;
+            transform: translateY(-50%);
+            color: var(--gray-400);
+        }
+
+        .input-group .form-input {
+            padding-left: 3rem;
+        }
+
+        /* ========================================
+           BUTTONS
+        ======================================== */
+        .btn {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 0.5rem;
+            padding: 0.875rem 1.5rem;
+            border: none;
+            border-radius: var(--border-radius);
+            font-size: 1rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: var(--transition);
+            text-decoration: none;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .btn:before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: -100%;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.2), transparent);
+            transition: left 0.5s;
+        }
+
+        .btn:hover:before {
+            left: 100%;
         }
 
         .btn-primary {
-            background: linear-gradient(45deg, #667eea, #764ba2);
+            background: linear-gradient(135deg, var(--primary-color) 0%, var(--primary-dark) 100%);
             color: white;
         }
 
         .btn-primary:hover {
             transform: translateY(-2px);
-            box-shadow: 0 5px 15px rgba(102, 126, 234, 0.4);
+            box-shadow: var(--shadow-lg);
         }
 
         .btn-secondary {
-            background: #6c757d;
+            background: var(--gray-600);
             color: white;
         }
 
         .btn-secondary:hover {
-            background: #5a6268;
+            background: var(--gray-700);
+            transform: translateY(-2px);
         }
 
         .btn-success {
-            background: #28a745;
+            background: linear-gradient(135deg, var(--success-color) 0%, var(--secondary-color) 100%);
             color: white;
         }
 
         .btn-success:hover {
-            background: #218838;
+            transform: translateY(-2px);
+            box-shadow: var(--shadow-lg);
         }
 
         .btn-danger {
-            background: #dc3545;
+            background: var(--danger-color);
             color: white;
         }
 
         .btn-danger:hover {
-            background: #c82333;
+            background: #dc2626;
+            transform: translateY(-2px);
         }
 
-        .btn-warning {
-            background: #ffc107;
-            color: #212529;
+        .btn-outline {
+            background: transparent;
+            border: 2px solid var(--primary-color);
+            color: var(--primary-color);
         }
 
-        .btn-warning:hover {
-            background: #e0a800;
+        .btn-outline:hover {
+            background: var(--primary-color);
+            color: white;
         }
 
-        .action-buttons {
+        /* ========================================
+           TABS SYSTEM
+        ======================================== */
+        .tabs-container {
+            border-bottom: 1px solid var(--gray-200);
+        }
+
+        .tabs-nav {
             display: flex;
-            justify-content: center;
-            flex-wrap: wrap;
-            gap: 15px;
-            margin-top: 30px;
-            padding: 20px;
-            background: #f8f9fa;
-            border-radius: 10px;
+            gap: 0;
+            background: var(--gray-50);
+            padding: 0.5rem;
+            border-radius: var(--border-radius) var(--border-radius) 0 0;
+            overflow-x: auto;
         }
 
-        .audit-list {
-            background: white;
-            border-radius: 8px;
-            margin-bottom: 20px;
-        }
-
-        .audit-item {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            padding: 20px;
-            border-bottom: 1px solid #e9ecef;
-            transition: background 0.3s ease;
-        }
-
-        .audit-item:hover {
-            background: #f8f9fa;
-        }
-
-        .audit-item:last-child {
-            border-bottom: none;
-        }
-
-        .audit-info {
+        .tab-button {
             flex: 1;
-        }
-
-        .audit-info h3 {
-            color: #2c3e50;
-            margin-bottom: 8px;
-        }
-
-        .audit-meta {
-            display: flex;
-            gap: 15px;
-            font-size: 0.9rem;
-            color: #6c757d;
-            margin-bottom: 5px;
-        }
-
-        .status-badge {
-            padding: 5px 12px;
-            border-radius: 20px;
-            font-size: 0.85rem;
+            min-width: 200px;
+            padding: 1rem 1.5rem;
+            border: none;
+            background: transparent;
+            color: var(--gray-600);
             font-weight: 500;
+            cursor: pointer;
+            border-radius: var(--border-radius);
+            transition: var(--transition);
+            position: relative;
+            white-space: nowrap;
         }
 
-        .status-finalized {
-            background: #d4edda;
-            color: #155724;
+        .tab-button.active {
+            background: white;
+            color: var(--primary-color);
+            box-shadow: var(--shadow-sm);
         }
 
-        .status-draft {
-            background: #fff3cd;
-            color: #856404;
-        }
-
-        .status-pending_review {
-            background: #cce5ff;
-            color: #004085;
-        }
-
-        .status-in_review {
-            background: #e2e3e5;
-            color: #383d41;
-        }
-
-        .search-bar {
-            margin-bottom: 20px;
-            display: flex;
-            gap: 10px;
-        }
-
-        .search-bar input {
-            flex: 1;
-        }
-
-        .alert {
-            padding: 15px;
-            border-radius: 8px;
-            margin: 15px 0;
-        }
-
-        .alert-success {
-            background: #d4edda;
-            color: #155724;
-            border: 1px solid #c3e6cb;
-        }
-
-        .alert-error {
-            background: #f8d7da;
-            color: #721c24;
-            border: 1px solid #f5c6cb;
-        }
-
-        .alert-info {
-            background: #cce5ff;
-            color: #004085;
-            border: 1px solid #b3d7ff;
-        }
-
-        .loading {
-            text-align: center;
-            padding: 40px;
-            color: #666;
-        }
-
-        .hidden {
+        .tab-content {
+            padding: 2rem;
             display: none;
         }
 
-        /* User Management Styles */
-        .user-item {
+        .tab-content.active {
+            display: block;
+        }
+
+        /* ========================================
+           CARDS AND SECTIONS
+        ======================================== */
+        .card {
+            background: white;
+            border-radius: var(--border-radius-lg);
+            box-shadow: var(--shadow-md);
+            padding: 2rem;
+            margin-bottom: 2rem;
+            border: 1px solid var(--gray-100);
+            transition: var(--transition);
+        }
+
+        .card:hover {
+            box-shadow: var(--shadow-lg);
+            transform: translateY(-2px);
+        }
+
+        .card-header {
             display: flex;
             justify-content: space-between;
             align-items: center;
-            padding: 15px;
-            border-bottom: 1px solid #e9ecef;
-            background: white;
-            margin-bottom: 5px;
-            border-radius: 5px;
+            margin-bottom: 1.5rem;
+            padding-bottom: 1rem;
+            border-bottom: 1px solid var(--gray-100);
         }
 
-        .user-info-detail {
-            flex: 1;
+        .card-title {
+            font-size: 1.25rem;
+            font-weight: 600;
+            color: var(--gray-800);
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
         }
 
-        .user-info-detail h4 {
-            margin: 0 0 5px 0;
-            color: #2c3e50;
-        }
-
-        .user-meta {
-            font-size: 0.9rem;
-            color: #6c757d;
-        }
-
-        .role-badge {
-            padding: 3px 8px;
-            border-radius: 12px;
-            font-size: 0.75rem;
-            font-weight: 500;
-            margin-left: 10px;
-        }
-
-        .role-data_analyst {
-            background: #d4edda;
-            color: #155724;
-        }
-
-        .role-field_auditor {
-            background: #cce5ff;
-            color: #004085;
-        }
-
-        .management-sections {
+        .form-row {
             display: grid;
-            grid-template-columns: 1fr 1fr;
-            gap: 20px;
-            margin-bottom: 20px;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 1.5rem;
+            margin-bottom: 1.5rem;
         }
 
-        .management-card {
-            background: #f8f9fa;
-            padding: 20px;
-            border-radius: 8px;
-            border: 1px solid #e9ecef;
+        /* ========================================
+           DASHBOARD STATS
+        ======================================== */
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 1.5rem;
+            margin-bottom: 2rem;
         }
 
-        .management-card h4 {
-            margin-bottom: 15px;
-            color: #2c3e50;
+        .stat-card {
+            background: linear-gradient(135deg, white 0%, var(--gray-50) 100%);
+            border-radius: var(--border-radius-lg);
+            padding: 2rem;
+            text-align: center;
+            box-shadow: var(--shadow-md);
+            border: 1px solid var(--gray-100);
+            transition: var(--transition);
+            position: relative;
+            overflow: hidden;
+        }
+
+        .stat-card:before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 4px;
+            background: linear-gradient(90deg, var(--primary-color), var(--secondary-color));
+        }
+
+        .stat-card:hover {
+            transform: translateY(-4px);
+            box-shadow: var(--shadow-xl);
+        }
+
+        .stat-icon {
+            width: 60px;
+            height: 60px;
+            margin: 0 auto 1rem;
+            background: linear-gradient(135deg, var(--primary-color) 0%, var(--primary-dark) 100%);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-size: 1.5rem;
+        }
+
+        .stat-value {
+            font-size: 2rem;
+            font-weight: 700;
+            color: var(--gray-800);
+            margin-bottom: 0.5rem;
+        }
+
+        .stat-label {
+            color: var(--gray-600);
+            font-weight: 500;
+        }
+
+        /* ========================================
+           TABLES
+        ======================================== */
+        .table-container {
+            background: white;
+            border-radius: var(--border-radius-lg);
+            box-shadow: var(--shadow-md);
+            overflow: hidden;
+            margin-bottom: 2rem;
+        }
+
+        .table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+
+        .table th,
+        .table td {
+            padding: 1rem;
+            text-align: left;
+            border-bottom: 1px solid var(--gray-100);
+        }
+
+        .table th {
+            background: var(--gray-50);
+            font-weight: 600;
+            color: var(--gray-700);
+            position: sticky;
+            top: 0;
+        }
+
+        .table tr:hover {
+            background: var(--gray-50);
+        }
+
+        .status-badge {
+            display: inline-block;
+            padding: 0.25rem 0.75rem;
+            border-radius: 50px;
+            font-size: 0.75rem;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .status-draft {
+            background: var(--gray-100);
+            color: var(--gray-700);
+        }
+
+        .status-pending {
+            background: #fef3c7;
+            color: #92400e;
+        }
+
+        .status-review {
+            background: #dbeafe;
+            color: #1e40af;
+        }
+
+        .status-finalized {
+            background: #d1fae5;
+            color: #065f46;
+        }
+
+        /* ========================================
+           SIGNATURE CANVAS
+        ======================================== */
+        .signature-section {
+            background: var(--gray-50);
+            border-radius: var(--border-radius);
+            padding: 2rem;
+            margin: 2rem 0;
+            border: 2px dashed var(--gray-300);
+        }
+
+        .signature-canvas {
+            width: 100%;
+            height: 200px;
+            border: 2px solid var(--gray-300);
+            border-radius: var(--border-radius);
+            background: white;
+            cursor: crosshair;
+        }
+
+        .signature-controls {
+            display: flex;
+            gap: 1rem;
+            margin-top: 1rem;
+            justify-content: center;
+            flex-wrap: wrap;
+        }
+
+        .signature-upload {
+            margin-top: 1rem;
+        }
+
+        .file-upload-wrapper {
+            position: relative;
+            display: inline-block;
+        }
+
+        .file-upload-input {
+            position: absolute;
+            left: -9999px;
+        }
+
+        .file-upload-button {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
+            padding: 0.5rem 1rem;
+            background: var(--secondary-color);
+            color: white;
+            border-radius: var(--border-radius);
+            cursor: pointer;
+            transition: var(--transition);
+        }
+
+        .file-upload-button:hover {
+            background: #059669;
+        }
+
+        /* ========================================
+           DEMOGRAPHIC TABLE
+        ======================================== */
+        .demographic-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 1rem;
+        }
+
+        .demographic-table th,
+        .demographic-table td {
+            border: 1px solid var(--gray-300);
+            padding: 0.75rem;
+            text-align: center;
+        }
+
+        .demographic-table th {
+            background: var(--gray-100);
+            font-weight: 600;
+        }
+
+        .demographic-table input {
+            width: 80px;
+            padding: 0.5rem;
+            border: 1px solid var(--gray-300);
+            border-radius: 4px;
+            text-align: center;
+        }
+
+        /* ========================================
+           DYNAMIC ROWS
+        ======================================== */
+        .dynamic-row {
+            display: grid;
+            grid-template-columns: 2fr 1fr 1fr 2fr auto;
+            gap: 1rem;
+            align-items: end;
+            margin-bottom: 1rem;
+            padding: 1rem;
+            background: var(--gray-50);
+            border-radius: var(--border-radius);
+        }
+
+        .calculation-row {
+            display: grid;
+            grid-template-columns: 2fr 1fr 1fr 1fr 1fr 1fr auto;
+            gap: 1rem;
+            align-items: center;
+            margin-bottom: 1rem;
+            padding: 1rem;
+            background: var(--gray-50);
+            border-radius: var(--border-radius);
+        }
+
+        .totals-row {
+            background: var(--primary-color);
+            color: white;
+            font-weight: bold;
+        }
+
+        .totals-row input {
+            background: transparent;
+            border: 1px solid rgba(255, 255, 255, 0.3);
+            color: white;
+        }
+
+        /* ========================================
+           CHECKBOX AND RADIO GROUPS
+        ======================================== */
+        .checkbox-group,
+        .radio-group {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 1rem;
+            margin-top: 0.5rem;
+        }
+
+        .checkbox-item,
+        .radio-item {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            cursor: pointer;
+            padding: 0.5rem;
+            border-radius: var(--border-radius);
+            transition: var(--transition);
+        }
+
+        .checkbox-item:hover,
+        .radio-item:hover {
+            background: var(--gray-50);
+        }
+
+        .checkbox-item input,
+        .radio-item input {
+            width: auto;
+            margin: 0;
+        }
+
+        /* ========================================
+           RESPONSIVE DESIGN
+        ======================================== */
+        @media (max-width: 1024px) {
+            .main-container {
+                grid-template-columns: 1fr;
+                gap: 1rem;
+            }
+
+            .sidebar {
+                position: static;
+            }
+
+            .header-content {
+                padding: 0 1rem;
+            }
+
+            .main-container {
+                padding: 0 1rem;
+            }
+
+            .tabs-nav {
+                flex-direction: column;
+                gap: 0.5rem;
+            }
+
+            .tab-button {
+                min-width: auto;
+            }
         }
 
         @media (max-width: 768px) {
             .form-row {
                 grid-template-columns: 1fr;
             }
-            
-            .nav-tabs {
-                flex-direction: column;
-            }
-            
-            .action-buttons {
-                flex-direction: column;
-                align-items: center;
-            }
-            
-            .audit-item {
-                flex-direction: column;
-                align-items: flex-start;
-                gap: 10px;
-            }
-            
-            .header {
-                flex-direction: column;
-                gap: 10px;
-            }
 
-            .management-sections {
+            .stats-grid {
                 grid-template-columns: 1fr;
             }
+
+            .dynamic-row {
+                grid-template-columns: 1fr;
+                gap: 0.5rem;
+            }
+
+            .calculation-row {
+                grid-template-columns: 1fr;
+                gap: 0.5rem;
+            }
+
+            .checkbox-group,
+            .radio-group {
+                grid-template-columns: 1fr;
+            }
+
+            .signature-canvas {
+                height: 150px;
+            }
+
+            .btn {
+                width: 100%;
+                justify-content: center;
+            }
+
+            .header-text h1 {
+                font-size: 1.25rem;
+            }
+
+            .user-info {
+                display: none;
+            }
+
+            .login-card {
+                padding: 2rem;
+                margin: 1rem;
+            }
+        }
+
+        /* ========================================
+           UTILITY CLASSES
+        ======================================== */
+        .hidden { display: none !important; }
+        .text-center { text-align: center; }
+        .text-right { text-align: right; }
+        .font-bold { font-weight: 700; }
+        .text-sm { font-size: 0.875rem; }
+        .text-lg { font-size: 1.125rem; }
+        .mb-4 { margin-bottom: 1rem; }
+        .mt-4 { margin-top: 1rem; }
+        .p-4 { padding: 1rem; }
+
+        /* ========================================
+           NOTIFICATION TOAST
+        ======================================== */
+        .toast-container {
+            position: fixed;
+            top: 100px;
+            right: 2rem;
+            z-index: 3000;
+            display: flex;
+            flex-direction: column;
+            gap: 1rem;
+        }
+
+        .toast {
+            background: white;
+            border-radius: var(--border-radius);
+            box-shadow: var(--shadow-xl);
+            padding: 1rem 1.5rem;
+            border-left: 4px solid;
+            min-width: 300px;
+            transform: translateX(400px);
+            transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+        }
+
+        .toast.show {
+            transform: translateX(0);
+        }
+
+        .toast-success {
+            border-color: var(--success-color);
+        }
+
+        .toast-error {
+            border-color: var(--danger-color);
+        }
+
+        .toast-warning {
+            border-color: var(--warning-color);
+        }
+
+        .toast-info {
+            border-color: var(--primary-color);
+        }
+
+        /* ========================================
+           CONDITIONAL FIELDS
+        ======================================== */
+        .conditional-field {
+            display: none;
+            margin-top: 1rem;
+            padding: 1rem;
+            background: var(--gray-50);
+            border-radius: var(--border-radius);
+            border-left: 4px solid var(--primary-color);
+        }
+
+        .conditional-field.show {
+            display: block;
+        }
+
+        /* ========================================
+           LOADING STATES
+        ======================================== */
+        .loading-spinner {
+            display: inline-block;
+            width: 20px;
+            height: 20px;
+            border: 2px solid rgba(255, 255, 255, 0.3);
+            border-radius: 50%;
+            border-top-color: white;
+            animation: spin 1s linear infinite;
+        }
+
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+
+        /* ========================================
+           ANIMATIONS
+        ======================================== */
+        @keyframes slideInUp {
+            from {
+                opacity: 0;
+                transform: translateY(30px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; }
+            to { opacity: 1; }
+        }
+
+        .animate-slideInUp {
+            animation: slideInUp 0.6s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        .animate-fadeIn {
+            animation: fadeIn 0.4s ease;
         }
     </style>
 </head>
 <body>
+    <!-- Toast Notification Container -->
+    <div class="toast-container" id="toastContainer"></div>
+
     <!-- Login Screen -->
     <div id="loginScreen" class="login-container">
-        <div class="login-form">
-            <h2>PAKPRO Audit System</h2>
-            <div id="loginAlerts"></div>
+        <div class="login-card animate-slideInUp">
+            <div class="login-header">
+                <div class="logo">
+                    <i class="fas fa-shield-alt"></i>
+                </div>
+                <h1>PAKPRO Kenya Digital Audit</h1>
+                <p>Secure Verification System</p>
+            </div>
+            
             <form id="loginForm">
                 <div class="form-group">
-                    <label for="username">Username</label>
-                    <input type="text" id="username" name="username" required>
+                    <label class="form-label">Username</label>
+                    <div class="input-group">
+                        <i class="fas fa-user input-icon"></i>
+                        <input type="text" id="username" class="form-input" placeholder="Enter your username" required>
+                    </div>
                 </div>
+                
                 <div class="form-group">
-                    <label for="password">Password</label>
-                    <input type="password" id="password" name="password" required>
+                    <label class="form-label">Password</label>
+                    <div class="input-group">
+                        <i class="fas fa-lock input-icon"></i>
+                        <input type="password" id="password" class="form-input" placeholder="Enter your password" required>
+                    </div>
                 </div>
-                <button type="submit" class="btn btn-primary" style="width: 100%;">Login</button>
+                
+                <button type="submit" class="btn btn-primary" style="width: 100%; margin-top: 1rem;">
+                    <i class="fas fa-sign-in-alt"></i>
+                    Sign In
+                </button>
             </form>
+            
+            <div class="mt-4 text-center text-sm">
+                <p>Demo Credentials:</p>
+                <p><strong>admin</strong> / pakpro123</p>
+                <p><strong>analyst1</strong> / analyst123</p>
+            </div>
         </div>
     </div>
 
     <!-- Main Application -->
-    <div id="mainApp" class="container hidden">
-        <div class="header">
-            <div>
-                <h1>PAKPRO</h1>
-                <p>Digital Verification Audit System</p>
-            </div>
-            <div class="user-info">
-                <span id="userDisplay">Welcome!</span>
-                <button class="btn btn-secondary" onclick="logout()">Logout</button>
-            </div>
-        </div>
-
-        <div class="nav-tabs">
-            <button class="nav-tab active" onclick="showSection('dashboard')">Dashboard</button>
-            <button class="nav-tab" onclick="showSection('general')">General Info</button>
-            <button class="nav-tab" onclick="showSection('validation')">Validation</button>
-            <button class="nav-tab" onclick="showSection('conclusions')">Conclusions</button>
-            <button class="nav-tab" id="userManagementTab" onclick="showSection('userManagement')" style="display: none;">User Management</button>
-        </div>
-
-        <div class="content">
-            <!-- Dashboard Section -->
-            <div id="dashboard" class="section active">
-                <h2>Audit Dashboard</h2>
-                <div id="alerts"></div>
-                
-                <div class="search-bar">
-                    <input id="searchInput" type="text" placeholder="Search audits by entity name, contract ref, or ID...">
-                    <select id="statusFilter">
-                        <option value="">All Statuses</option>
-                        <option value="draft">Draft</option>
-                        <option value="pending_review">Pending Review</option>
-                        <option value="in_review">In Review</option>
-                        <option value="finalized">Finalized</option>
-                    </select>
-                    <button class="btn btn-secondary" onclick="loadAudits()">Search</button>
-                </div>
-                
-                <div class="audit-list" id="auditList">
-                    <div class="loading">Click "Load Audits" to view all audits</div>
-                </div>
-                
-                <div class="action-buttons">
-                    <button class="btn btn-primary" onclick="newAudit()">New Audit</button>
-                    <button class="btn btn-secondary" onclick="loadAudits()">Load Audits</button>
-                    <button class="btn btn-success" onclick="exportAllAudits()" id="exportAllBtn" style="display:none;">Export All to Excel</button>
-                </div>
-            </div>
-
-            <!-- User Management Section -->
-            <div id="userManagement" class="section">
-                <h2>User Management</h2>
-                <div id="userManagementAlerts"></div>
-                
-                <div class="management-sections">
-                    <!-- Existing Users -->
-                    <div class="management-card">
-                        <h4>Existing Users</h4>
-                        <div id="userList">
-                            <div class="loading">Click "Load Users" to view all users</div>
-                        </div>
-                        <button class="btn btn-secondary" onclick="loadUsers()">Load Users</button>
+    <div id="mainApp" class="hidden">
+        <!-- Header -->
+        <header class="header">
+            <div class="header-content">
+                <div class="logo-section">
+                    <div class="logo">
+                        <i class="fas fa-shield-alt"></i>
                     </div>
+                    <div class="header-text">
+                        <h1>PAKPRO Kenya Digital Verification Audit System</h1>
+                        <p>Enhanced Security & Advanced Analytics Platform</p>
+                    </div>
+                </div>
+                
+                <div class="user-section">
+                    <button class="theme-toggle" onclick="toggleTheme()">
+                        <i class="fas fa-moon"></i>
+                    </button>
                     
-                    <!-- Create New User -->
-                    <div class="management-card">
-                        <h4>Create New User Account</h4>
-                        <div class="form-group">
-                            <label for="newUsername">Username *</label>
-                            <input type="text" id="newUsername" required>
+                    <div class="user-info">
+                        <div class="user-avatar" id="userAvatar">A</div>
+                        <div>
+                            <div style="font-weight: 600;" id="currentUserName">Admin User</div>
+                            <div style="font-size: 0.75rem; opacity: 0.8;" id="currentUserRole">Data Analyst</div>
                         </div>
-                        <div class="form-group">
-                            <label for="newEmail">Email *</label>
-                            <input type="email" id="newEmail" required>
-                        </div>
-                        <div class="form-group">
-                            <label for="newPassword">Password *</label>
-                            <input type="password" id="newPassword" required>
-                        </div>
-                        <div class="form-group">
-                            <label for="newRole">Role *</label>
-                            <select id="newRole" required>
-                                <option value="field_auditor">Field Auditor (Data Collector)</option>
-                                <option value="data_analyst">Data Analyst</option>
-                            </select>
-                        </div>
-                        <div class="form-group">
-                            <label for="newFullName">Full Name</label>
-                            <input type="text" id="newFullName" placeholder="John Smith">
-                        </div>
-                        <div class="form-group">
-                            <label for="newDepartment">Department</label>
-                            <input type="text" id="newDepartment" placeholder="Field Operations">
-                        </div>
-                        <button class="btn btn-primary" onclick="createNewUser()">Create User Account</button>
-                        <button class="btn btn-secondary" onclick="clearUserForm()">Clear Form</button>
+                        <button onclick="logout()" style="background: none; border: none; color: white; cursor: pointer; margin-left: 1rem;">
+                            <i class="fas fa-sign-out-alt"></i>
+                        </button>
                     </div>
                 </div>
             </div>
+        </header>
 
-            <!-- General Information Section -->
-            <div id="general" class="section">
-                <h2>General Information</h2>
-                <form id="generalForm">
-                    <div class="form-row">
-                        <div class="form-group">
-                            <label for="entityName">Entity Name *</label>
-                            <input type="text" id="entityName" name="entityName" required>
+        <div class="main-container">
+            <!-- Sidebar -->
+            <aside class="sidebar">
+                <h3><i class="fas fa-bars"></i> Navigation</h3>
+                <ul class="nav-menu">
+                    <li class="nav-item">
+                        <a class="nav-link active" onclick="showSection('dashboard')">
+                            <i class="fas fa-chart-line"></i>
+                            Dashboard
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" onclick="showSection('newAudit')">
+                            <i class="fas fa-plus-circle"></i>
+                            New Audit
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" onclick="showSection('auditList')">
+                            <i class="fas fa-list-alt"></i>
+                            Audit List
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" onclick="showSection('analytics')">
+                            <i class="fas fa-analytics"></i>
+                            Analytics
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" onclick="showSection('exports')">
+                            <i class="fas fa-download"></i>
+                            Export Center
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" onclick="showSection('settings')">
+                            <i class="fas fa-cog"></i>
+                            Settings
+                        </a>
+                    </li>
+                </ul>
+                
+                <div class="progress-section">
+                    <h4 style="margin-bottom: 1rem; color: var(--gray-700); font-size: 0.875rem;">Form Progress</h4>
+                    <div class="progress-bar">
+                        <div class="progress-fill" id="progressFill"></div>
+                    </div>
+                    <div class="progress-text" id="progressText">0% Complete</div>
+                    
+                    <div style="margin-top: 1.5rem; font-size: 0.75rem; color: var(--gray-500);">
+                        <div><i class="fas fa-circle" style="color: #22c55e;"></i> Database: Connected</div>
+                        <div><i class="fas fa-circle" style="color: #22c55e;"></i> Backup: Active</div>
+                        <div><i class="fas fa-circle" style="color: #f59e0b;"></i> Updates: Available</div>
+                    </div>
+                </div>
+            </aside>
+
+            <!-- Main Content -->
+            <main class="content-area">
+                <!-- Dashboard Section -->
+                <section id="dashboardSection" class="animate-fadeIn">
+                    <div style="padding: 2rem;">
+                        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 2rem;">
+                            <div>
+                                <h2 style="font-size: 1.875rem; font-weight: 700; color: var(--gray-800); margin-bottom: 0.5rem;">
+                                    Dashboard Overview
+                                </h2>
+                                <p style="color: var(--gray-600);">Real-time audit system analytics and performance metrics</p>
+                            </div>
+                            <div style="display: flex; gap: 1rem;">
+                                <button class="btn btn-outline" onclick="refreshDashboard()">
+                                    <i class="fas fa-sync-alt"></i>
+                                    Refresh
+                                </button>
+                                <button class="btn btn-primary" onclick="showSection('newAudit')">
+                                    <i class="fas fa-plus"></i>
+                                    New Audit
+                                </button>
+                            </div>
                         </div>
-                        <div class="form-group">
-                            <label for="contractRef">PAKPRO Contract Reference No. *</label>
-                            <input type="text" id="contractRef" name="contractRef" required>
+
+                        <!-- Statistics Cards -->
+                        <div class="stats-grid">
+                            <div class="stat-card">
+                                <div class="stat-icon">
+                                    <i class="fas fa-clipboard-list"></i>
+                                </div>
+                                <div class="stat-value" id="totalAudits">24</div>
+                                <div class="stat-label">Total Audits</div>
+                            </div>
+                            
+                            <div class="stat-card">
+                                <div class="stat-icon" style="background: linear-gradient(135deg, var(--success-color) 0%, var(--secondary-color) 100%);">
+                                    <i class="fas fa-check-circle"></i>
+                                </div>
+                                <div class="stat-value" id="finalizedAudits">18</div>
+                                <div class="stat-label">Finalized Audits</div>
+                            </div>
+                            
+                            <div class="stat-card">
+                                <div class="stat-icon" style="background: linear-gradient(135deg, var(--warning-color) 0%, var(--accent-color) 100%);">
+                                    <i class="fas fa-clock"></i>
+                                </div>
+                                <div class="stat-value" id="pendingAudits">4</div>
+                                <div class="stat-label">Pending Reviews</div>
+                            </div>
+                            
+                            <div class="stat-card">
+                                <div class="stat-icon" style="background: linear-gradient(135deg, var(--danger-color) 0%, #dc2626 100%);">
+                                    <i class="fas fa-exclamation-triangle"></i>
+                                </div>
+                                <div class="stat-value" id="rejectedVolume">2.4 MT</div>
+                                <div class="stat-label">Rejected Volume</div>
+                            </div>
+                        </div>
+
+                        <!-- Recent Activity -->
+                        <div class="card">
+                            <div class="card-header">
+                                <h3 class="card-title">
+                                    <i class="fas fa-history"></i>
+                                    Recent Activity
+                                </h3>
+                                <button class="btn btn-outline" onclick="showSection('auditList')">View All</button>
+                            </div>
+                            <div class="table-container">
+                                <table class="table">
+                                    <thead>
+                                        <tr>
+                                            <th>Entity Name</th>
+                                            <th>Contract Ref</th>
+                                            <th>Status</th>
+                                            <th>Progress</th>
+                                            <th>Last Updated</th>
+                                            <th>Actions</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody id="recentAuditsTable">
+                                        <tr>
+                                            <td>Eco Post Kenya Ltd</td>
+                                            <td>CT-KE-2024-001</td>
+                                            <td><span class="status-badge status-finalized">finalized</span></td>
+                                            <td>
+                                                <div style="display: flex; align-items: center; gap: 0.5rem;">
+                                                    <div class="progress-bar" style="flex: 1; height: 6px;">
+                                                        <div class="progress-fill" style="width: 100%"></div>
+                                                    </div>
+                                                    <span style="font-size: 0.75rem;">100%</span>
+                                                </div>
+                                            </td>
+                                            <td>Jan 20, 2024</td>
+                                            <td>
+                                                <button class="btn btn-outline" style="padding: 0.25rem 0.5rem; font-size: 0.75rem;" onclick="editAudit('1')">
+                                                    <i class="fas fa-edit"></i>
+                                                </button>
+                                            </td>
+                                        </tr>
+                                        <tr>
+                                            <td>Green Cycle Industries</td>
+                                            <td>CT-KE-2024-002</td>
+                                            <td><span class="status-badge status-pending">pending</span></td>
+                                            <td>
+                                                <div style="display: flex; align-items: center; gap: 0.5rem;">
+                                                    <div class="progress-bar" style="flex: 1; height: 6px;">
+                                                        <div class="progress-fill" style="width: 75%"></div>
+                                                    </div>
+                                                    <span style="font-size: 0.75rem;">75%</span>
+                                                </div>
+                                            </td>
+                                            <td>Jan 22, 2024</td>
+                                            <td>
+                                                <button class="btn btn-outline" style="padding: 0.25rem 0.5rem; font-size: 0.75rem;" onclick="editAudit('2')">
+                                                    <i class="fas fa-edit"></i>
+                                                </button>
+                                            </td>
+                                        </tr>
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+                </section>
+
+                <!-- New Audit Section -->
+                <section id="newAuditSection" class="hidden">
+                    <div class="tabs-container">
+                        <div class="tabs-nav">
+                            <button class="tab-button active" onclick="switchTab('general')">
+                                <i class="fas fa-info-circle"></i>
+                                General Information
+                            </button>
+                            <button class="tab-button" onclick="switchTab('assessment')">
+                                <i class="fas fa-clipboard-check"></i>
+                                Assessment Details
+                            </button>
+                            <button class="tab-button" onclick="switchTab('esg')">
+                                <i class="fas fa-shield-alt"></i>
+                                ESG Compliance
+                            </button>
+                            <button class="tab-button" onclick="switchTab('validation')">
+                                <i class="fas fa-check-double"></i>
+                                Validation Process
+                            </button>
+                            <button class="tab-button" onclick="switchTab('materials')">
+                                <i class="fas fa-calculator"></i>
+                                Materials & Calculations
+                            </button>
+                            <button class="tab-button" onclick="switchTab('signatures')">
+                                <i class="fas fa-signature"></i>
+                                Signatures
+                            </button>
                         </div>
                     </div>
 
-                    <div class="form-row">
-                        <div class="form-group">
-                            <label for="entityAddress">Entity Address</label>
-                            <textarea id="entityAddress" name="entityAddress" rows="3"></textarea>
-                        </div>
-                        <div class="form-group">
-                            <label for="verificationPeriod">Verification Period</label>
-                            <input type="text" id="verificationPeriod" name="verificationPeriod">
-                        </div>
-                    </div>
+                    <!-- Tab Contents -->
+                    <!-- General Information Tab -->
+                    <div id="generalTab" class="tab-content active">
+                        <div class="card">
+                            <div class="card-header">
+                                <h3 class="card-title">
+                                    <i class="fas fa-info-circle"></i>
+                                    Section 1: General Information
+                                </h3>
+                            </div>
+                            
+                            <div class="form-row">
+                                <div class="form-group">
+                                    <label class="form-label">Entity Name and Address *</label>
+                                    <input type="text" id="entityName" class="form-input" placeholder="Enter entity name" required>
+                                </div>
+                                
+                                <div class="form-group">
+                                    <label class="form-label">PAKPRO Contract Reference *</label>
+                                    <input type="text" id="contractRef" class="form-input" placeholder="Enter contract reference" required>
+                                </div>
+                            </div>
+                            
+                            <div class="form-row">
+                                <div class="form-group">
+                                    <label class="form-label">Procurement Location</label>
+                                    <select id="procurementLocation" class="form-select">
+                                        <option value="">Select County</option>
+                                        <option value="Nairobi County">Nairobi County</option>
+                                        <option value="Mombasa County">Mombasa County</option>
+                                        <option value="Kisumu County">Kisumu County</option>
+                                        <option value="Nakuru County">Nakuru County</option>
+                                        <option value="Kiambu County">Kiambu County</option>
+                                        <option value="Machakos County">Machakos County</option>
+                                        <option value="Kajiado County">Kajiado County</option>
+                                        <option value="Kilifi County">Kilifi County</option>
+                                        <option value="Uasin Gishu County">Uasin Gishu County</option>
+                                        <option value="Kakamega County">Kakamega County</option>
+                                        <option value="Meru County">Meru County</option>
+                                        <option value="Nyeri County">Nyeri County</option>
+                                        <option value="Kericho County">Kericho County</option>
+                                        <option value="Murang'a County">Murang'a County</option>
+                                        <option value="Laikipia County">Laikipia County</option>
+                                    </select>
+                                </div>
+                                
+                                <div class="form-group">
+                                    <label class="form-label">Processing Location</label>
+                                    <select id="processingLocation" class="form-select">
+                                        <option value="">Select County</option>
+                                        <option value="Nairobi County">Nairobi County</option>
+                                        <option value="Mombasa County">Mombasa County</option>
+                                        <option value="Kisumu County">Kisumu County</option>
+                                        <option value="Nakuru County">Nakuru County</option>
+                                        <option value="Kiambu County">Kiambu County</option>
+                                        <option value="Machakos County">Machakos County</option>
+                                        <option value="Kajiado County">Kajiado County</option>
+                                        <option value="Kilifi County">Kilifi County</option>
+                                        <option value="Uasin Gishu County">Uasin Gishu County</option>
+                                        <option value="Kakamega County">Kakamega County</option>
+                                        <option value="Meru County">Meru County</option>
+                                        <option value="Nyeri County">Nyeri County</option>
+                                        <option value="Kericho County">Kericho County</option>
+                                        <option value="Murang'a County">Murang'a County</option>
+                                        <option value="Laikipia County">Laikipia County</option>
+                                    </select>
+                                </div>
+                            </div>
+                            
+                            <div class="form-row">
+                                <div class="form-group">
+                                    <label class="form-label">Verification Period Start</label>
+                                    <input type="date" id="verificationPeriodStart" class="form-input">
+                                </div>
+                                
+                                <div class="form-group">
+                                    <label class="form-label">Verification Period End</label>
+                                    <input type="date" id="verificationPeriodEnd" class="form-input">
+                                </div>
+                            </div>
 
-                    <div class="form-row">
-                        <div class="form-group">
-                            <label for="projectTitle">Project Title</label>
-                            <input type="text" id="projectTitle" name="projectTitle">
-                        </div>
-                        <div class="form-group">
-                            <label for="auditeeTeamLeader">Auditee Team Leader's Name</label>
-                            <input type="text" id="auditeeTeamLeader" name="auditeeTeamLeader">
-                        </div>
-                    </div>
+                            <div class="form-row">
+                                <div class="form-group">
+                                    <label class="form-label">Project Title</label>
+                                    <input type="text" id="projectTitle" class="form-input" placeholder="Enter project title">
+                                </div>
+                                
+                                <div class="form-group">
+                                    <label class="form-label">Auditee Team Leader's Name</label>
+                                    <input type="text" id="auditeeTeamLeader" class="form-input" placeholder="Enter team leader name">
+                                </div>
+                            </div>
 
-                    <div class="form-row">
-                        <div class="form-group">
-                            <label for="startDate">Start Date of Assessment</label>
-                            <input type="date" id="startDate" name="startDate">
-                        </div>
-                        <div class="form-group">
-                            <label for="onSiteDate">On-site Assessment Date</label>
-                            <input type="date" id="onSiteDate" name="onSiteDate">
-                        </div>
-                    </div>
-                </form>
-            </div>
-
-            <!-- Validation Section -->
-            <div id="validation" class="section">
-                <h2>Validation and Verification Process</h2>
-                <form id="validationForm">
-                    <div class="form-group">
-                        <label for="spotChecks">Spot-checks conducted by PAKPRO?</label>
-                        <select id="spotChecks" name="spotChecks">
-                            <option value="">Select...</option>
-                            <option value="yes">Yes</option>
-                            <option value="no">No</option>
-                        </select>
-                    </div>
-
-                    <div class="form-group">
-                        <label for="rejectedMaterial">Rejected post-consumer material after payment?</label>
-                        <select id="rejectedMaterial" name="rejectedMaterial">
-                            <option value="">Select...</option>
-                            <option value="yes">Yes</option>
-                            <option value="no">No</option>
-                        </select>
-                    </div>
-
-                    <div class="form-group">
-                        <label for="rejectionDetails">If Yes, provide details and volumes</label>
-                        <textarea id="rejectionDetails" name="rejectionDetails" rows="3"></textarea>
-                    </div>
-
-                    <div class="form-group">
-                        <label for="contractAmendments">Contract amendments to be captured?</label>
-                        <select id="contractAmendments" name="contractAmendments">
-                            <option value="">Select...</option>
-                            <option value="yes">Yes</option>
-                            <option value="no">No</option>
-                        </select>
-                    </div>
-
-                    <div class="form-group">
-                        <label for="amendmentDetails">Amendment details</label>
-                        <textarea id="amendmentDetails" name="amendmentDetails" rows="3"></textarea>
-                    </div>
-
-                    <div class="form-group">
-                        <label for="additionalComments">Additional Comments</label>
-                        <textarea id="additionalComments" name="additionalComments" rows="4"></textarea>
-                    </div>
-                </form>
-            </div>
-
-            <!-- Conclusions Section -->
-            <div id="conclusions" class="section">
-                <h2>Conclusions</h2>
-                <form id="conclusionsForm">
-                    <div class="form-group">
-                        <label for="assessmentStatus">Assessment Status *</label>
-                        <select id="assessmentStatus" name="assessmentStatus" required>
-                            <option value="">Select status...</option>
-                            <option value="finalized">Assessment Finalized</option>
-                            <option value="pending">Non-Conformities Still Open</option>
-                            <option value="rejected">Proposed Corrective Actions Not Accepted</option>
-                        </select>
-                    </div>
-
-                    <div class="form-row">
-                        <div class="form-group">
-                            <label for="auditTeamLeader">PAKPRO Audit Team Leader Name *</label>
-                            <input type="text" id="auditTeamLeader" name="auditTeamLeader" required>
-                        </div>
-                        <div class="form-group">
-                            <label for="auditDate">Audit Date *</label>
-                            <input type="date" id="auditDate" name="auditDate" required>
+                            <div class="form-group">
+                                <label class="form-label">Auditee Team Members</label>
+                                <textarea id="auditeeTeamMembers" class="form-textarea" rows="3" placeholder="Enter team member names"></textarea>
+                            </div>
                         </div>
                     </div>
 
-                    <div class="form-group">
-                        <label for="conclusionComments">Additional Comments</label>
-                        <textarea id="conclusionComments" name="conclusionComments" rows="4"></textarea>
+                    <!-- Assessment Details Tab -->
+                    <div id="assessmentTab" class="tab-content">
+                        <div class="card">
+                            <div class="card-header">
+                                <h3 class="card-title">
+                                    <i class="fas fa-clipboard-check"></i>
+                                    Assessment Details
+                                </h3>
+                            </div>
+                            
+                            <div class="form-group">
+                                <label class="form-label">Type of Assessment *</label>
+                                <div class="checkbox-group">
+                                    <label class="checkbox-item">
+                                        <input type="checkbox" id="initialVerification">
+                                        Initial Verification at Recycling Plant
+                                    </label>
+                                    <label class="checkbox-item">
+                                        <input type="checkbox" id="ongoingVerification">
+                                        Ongoing Verification at Recycling Plant
+                                    </label>
+                                    <label class="checkbox-item">
+                                        <input type="checkbox" id="auditTradingCentre">
+                                        Audit at Trading Centre/Aggregation Site/MRF
+                                    </label>
+                                    <label class="checkbox-item">
+                                        <input type="checkbox" id="correctiveActions">
+                                        Verification of Corrective Actions
+                                    </label>
+                                </div>
+                            </div>
+                            
+                            <div class="form-group">
+                                <label class="form-label">On-site Assessment</label>
+                                <div class="radio-group">
+                                    <label class="radio-item">
+                                        <input type="radio" name="onsiteAssessment" value="no" onchange="toggleOnsiteDetails()">
+                                        No
+                                    </label>
+                                    <label class="radio-item">
+                                        <input type="radio" name="onsiteAssessment" value="yes" onchange="toggleOnsiteDetails()">
+                                        Yes
+                                    </label>
+                                </div>
+                            </div>
+                            
+                            <div id="onsiteDetails" class="conditional-field">
+                                <div class="form-row">
+                                    <div class="form-group">
+                                        <label class="form-label">Entity Office Sites</label>
+                                        <input type="text" id="entityOfficeSites" class="form-input" placeholder="Enter entity office site details">
+                                    </div>
+                                    <div class="form-group">
+                                        <label class="form-label">Outsourced Entities/Other Offices</label>
+                                        <input type="text" id="outsourcedEntities" class="form-input" placeholder="Enter outsourced entity details">
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <div class="form-row">
+                                <div class="form-group">
+                                    <label class="form-label">Start Date of Assessment</label>
+                                    <input type="date" id="assessmentStartDate" class="form-input">
+                                </div>
+                                <div class="form-group">
+                                    <label class="form-label">On-site Assessment Dates (if applicable)</label>
+                                    <input type="text" id="onsiteAssessmentDates" class="form-input" placeholder="Enter assessment dates">
+                                </div>
+                            </div>
+                            
+                            <div class="form-group">
+                                <label class="form-label">Assessment Status</label>
+                                <div class="radio-group">
+                                    <label class="radio-item">
+                                        <input type="radio" name="assessmentStatus" value="finalized">
+                                        Assessment Finalized
+                                    </label>
+                                    <label class="radio-item">
+                                        <input type="radio" name="assessmentStatus" value="corrective_not_accepted">
+                                        Proposed Corrective Actions Not Accepted
+                                    </label>
+                                    <label class="radio-item">
+                                        <input type="radio" name="assessmentStatus" value="implemented_not_accepted">
+                                        Implemented Corrective Actions Not Accepted
+                                    </label>
+                                </div>
+                                <div class="form-group" style="margin-top: 1rem;">
+                                    <label class="form-label">Other Status (specify)</label>
+                                    <input type="text" id="otherAssessmentStatus" class="form-input" placeholder="Specify other assessment status">
+                                </div>
+                            </div>
+                        </div>
                     </div>
-                </form>
-            </div>
-        </div>
 
-        <div class="action-buttons">
-            <button class="btn btn-secondary" onclick="saveDraft()">Save Draft</button>
-            <button class="btn btn-primary" onclick="saveAudit()">Save Audit</button>
-            <button class="btn btn-success" onclick="finalizeAudit()">Finalize Audit</button>
-            <button class="btn btn-danger" onclick="deleteAudit()" style="display:none;" id="deleteBtn">Delete Audit</button>
+                    <!-- ESG Compliance Tab -->
+                    <div id="esgTab" class="tab-content">
+                        <div class="card">
+                            <div class="card-header">
+                                <h3 class="card-title">
+                                    <i class="fas fa-shield-alt"></i>
+                                    Section 2: Environment, Social & Governance (ESG)
+                                </h3>
+                            </div>
+                            
+                            <!-- Environment Section -->
+                            <div style="background: var(--gray-50); padding: 1.5rem; border-radius: var(--border-radius); margin-bottom: 2rem;">
+                                <h4 style="margin-bottom: 1.5rem; color: var(--primary-color);">
+                                    <i class="fas fa-leaf"></i> Environment
+                                </h4>
+                                
+                                <div class="form-group">
+                                    <label class="form-label">Does the recycler follow the guidelines as per the Occupational Safety and Health Administration Act?</label>
+                                    <div class="radio-group">
+                                        <label class="radio-item">
+                                            <input type="radio" name="oshActCompliance" value="no">
+                                            No
+                                        </label>
+                                        <label class="radio-item">
+                                            <input type="radio" name="oshActCompliance" value="yes">
+                                            Yes
+                                        </label>
+                                    </div>
+                                    <div class="form-group" style="margin-top: 1rem;">
+                                        <label class="form-label">If No, state the reasons</label>
+                                        <textarea id="oshActReasons" class="form-textarea" rows="2" placeholder="Provide reasons for non-compliance"></textarea>
+                                    </div>
+                                </div>
+                                
+                                <div class="form-group">
+                                    <label class="form-label">Does the recycler follow the guidelines on personal protective equipment?</label>
+                                    <div class="radio-group">
+                                        <label class="radio-item">
+                                            <input type="radio" name="ppeCompliance" value="no">
+                                            No
+                                        </label>
+                                        <label class="radio-item">
+                                            <input type="radio" name="ppeCompliance" value="yes">
+                                            Yes
+                                        </label>
+                                    </div>
+                                    <div class="form-group" style="margin-top: 1rem;">
+                                        <label class="form-label">If No, state the reasons</label>
+                                        <textarea id="ppeReasons" class="form-textarea" rows="2" placeholder="Provide reasons for non-compliance"></textarea>
+                                    </div>
+                                </div>
+                                
+                                <div class="form-group">
+                                    <label class="form-label">Does the recycler conduct periodic environmental audits as required?</label>
+                                    <div class="radio-group">
+                                        <label class="radio-item">
+                                            <input type="radio" name="environmentalAudits" value="no">
+                                            No
+                                        </label>
+                                        <label class="radio-item">
+                                            <input type="radio" name="environmentalAudits" value="yes">
+                                            Yes
+                                        </label>
+                                    </div>
+                                    <div class="form-group" style="margin-top: 1rem;">
+                                        <label class="form-label">If No, state the reasons</label>
+                                        <textarea id="environmentalAuditReasons" class="form-textarea" rows="2" placeholder="Provide reasons for non-compliance"></textarea>
+                                    </div>
+                                </div>
+                                
+                                <div class="form-row">
+                                    <div class="form-group">
+                                        <label class="form-label">Material Source County</label>
+                                        <select id="sourceCounty" class="form-select">
+                                            <option value="">Select County</option>
+                                            <option value="Nairobi County">Nairobi County</option>
+                                            <option value="Mombasa County">Mombasa County</option>
+                                            <option value="Kisumu County">Kisumu County</option>
+                                            <option value="Nakuru County">Nakuru County</option>
+                                            <option value="Kiambu County">Kiambu County</option>
+                                            <option value="Machakos County">Machakos County</option>
+                                            <option value="Kajiado County">Kajiado County</option>
+                                            <option value="Kilifi County">Kilifi County</option>
+                                            <option value="Uasin Gishu County">Uasin Gishu County</option>
+                                            <option value="Kakamega County">Kakamega County</option>
+                                            <option value="Meru County">Meru County</option>
+                                            <option value="Nyeri County">Nyeri County</option>
+                                            <option value="Kericho County">Kericho County</option>
+                                            <option value="Murang'a County">Murang'a County</option>
+                                            <option value="Laikipia County">Laikipia County</option>
+                                            <option value="Other">Other</option>
+                                        </select>
+                                    </div>
+                                    <div class="form-group">
+                                        <label class="form-label">Sub County</label>
+                                        <input type="text" id="sourceSubCounty" class="form-input" placeholder="Enter sub county">
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <!-- Social Section -->
+                            <div style="background: var(--gray-50); padding: 1.5rem; border-radius: var(--border-radius); margin-bottom: 2rem;">
+                                <h4 style="margin-bottom: 1.5rem; color: var(--secondary-color);">
+                                    <i class="fas fa-users"></i> Social
+                                </h4>
+                                
+                                <div class="form-group">
+                                    <label class="form-label">Suppliers of Materials to the Recycler</label>
+                                    <div id="suppliersContainer">
+                                        <div class="dynamic-row">
+                                            <div>
+                                                <label class="form-label" style="font-size: 0.875rem;">Name</label>
+                                                <input type="text" class="form-input supplier-name" placeholder="Supplier name">
+                                            </div>
+                                            <div>
+                                                <label class="form-label" style="font-size: 0.875rem;">Gender</label>
+                                                <select class="form-select supplier-gender">
+                                                    <option value="">Select</option>
+                                                    <option value="Male">Male</option>
+                                                    <option value="Female">Female</option>
+                                                </select>
+                                            </div>
+                                            <div>
+                                                <label class="form-label" style="font-size: 0.875rem;">Age</label>
+                                                <input type="number" class="form-input supplier-age" placeholder="Age">
+                                            </div>
+                                            <div>
+                                                <label class="form-label" style="font-size: 0.875rem;">Source/County</label>
+                                                <input type="text" class="form-input supplier-source" placeholder="Source/County">
+                                            </div>
+                                            <div>
+                                                <button type="button" class="btn btn-danger" style="padding: 0.5rem;" onclick="removeSupplierRow(this)">
+                                                    <i class="fas fa-trash"></i>
+                                                </button>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <button type="button" class="btn btn-outline" onclick="addSupplierRow()">
+                                        <i class="fas fa-plus"></i> Add Supplier
+                                    </button>
+                                </div>
+                                
+                                <div class="form-group">
+                                    <label class="form-label">Workforce Composition</label>
+                                    <table class="demographic-table">
+                                        <thead>
+                                            <tr>
+                                                <th>Gender</th>
+                                                <th>Age 0-18</th>
+                                                <th>Age 18-35</th>
+                                                <th>Above 35</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            <tr>
+                                                <td><strong>Male</strong></td>
+                                                <td><input type="number" id="maleAge0to18" placeholder="0"></td>
+                                                <td><input type="number" id="maleAge18to35" placeholder="0"></td>
+                                                <td><input type="number" id="maleAgeAbove35" placeholder="0"></td>
+                                            </tr>
+                                            <tr>
+                                                <td><strong>Female</strong></td>
+                                                <td><input type="number" id="femaleAge0to18" placeholder="0"></td>
+                                                <td><input type="number" id="femaleAge18to35" placeholder="0"></td>
+                                                <td><input type="number" id="femaleAgeAbove35" placeholder="0"></td>
+                                            </tr>
+                                        </tbody>
+                                    </table>
+                                </div>
+                            </div>
+                            
+                            <!-- Governance Section -->
+                            <div style="background: var(--gray-50); padding: 1.5rem; border-radius: var(--border-radius);">
+                                <h4 style="margin-bottom: 1.5rem; color: var(--accent-color);">
+                                    <i class="fas fa-gavel"></i> Governance
+                                </h4>
+                                
+                                <div class="form-group">
+                                    <label class="form-label">Does the supplier have any litigation arising within the verification period?</label>
+                                    <div class="radio-group">
+                                        <label class="radio-item">
+                                            <input type="radio" name="litigation" value="no">
+                                            No
+                                        </label>
+                                        <label class="radio-item">
+                                            <input type="radio" name="litigation" value="yes">
+                                            Yes
+                                        </label>
+                                    </div>
+                                    <div class="form-group" style="margin-top: 1rem;">
+                                        <label class="form-label">If Yes, state the details of the litigation</label>
+                                        <textarea id="litigationDetails" class="form-textarea" rows="3" placeholder="Provide litigation details"></textarea>
+                                    </div>
+                                </div>
+                                
+                                <div class="form-group">
+                                    <label class="form-label">Is ownership of the company the same as provided in CR. 12?</label>
+                                    <div class="radio-group">
+                                        <label class="radio-item">
+                                            <input type="radio" name="ownershipSame" value="no">
+                                            No
+                                        </label>
+                                        <label class="radio-item">
+                                            <input type="radio" name="ownershipSame" value="yes">
+                                            Yes
+                                        </label>
+                                    </div>
+                                    <div class="form-group" style="margin-top: 1rem;">
+                                        <label class="form-label">If No, state the details of any changes and when they occurred</label>
+                                        <textarea id="ownershipChanges" class="form-textarea" rows="3" placeholder="Provide ownership change details"></textarea>
+                                    </div>
+                                </div>
+                                
+                                <div class="form-group">
+                                    <label class="form-label">Does the facility/recycler have valid trading licences as required?</label>
+                                    <div class="radio-group">
+                                        <label class="radio-item">
+                                            <input type="radio" name="tradingLicences" value="no">
+                                            No
+                                        </label>
+                                        <label class="radio-item">
+                                            <input type="radio" name="tradingLicences" value="yes">
+                                            Yes
+                                        </label>
+                                    </div>
+                                    <div class="form-group" style="margin-top: 1rem;">
+                                        <label class="form-label">If No, give reasons</label>
+                                        <textarea id="tradingLicenceReasons" class="form-textarea" rows="2" placeholder="Provide reasons for not having valid trading licences"></textarea>
+                                    </div>
+                                </div>
+                                
+                                <div class="form-group">
+                                    <label class="form-label">Does the recycler have the necessary regulatory approvals as per the business requirements?</label>
+                                    <div class="radio-group">
+                                        <label class="radio-item">
+                                            <input type="radio" name="regulatoryApprovals" value="no">
+                                            No
+                                        </label>
+                                        <label class="radio-item">
+                                            <input type="radio" name="regulatoryApprovals" value="yes">
+                                            Yes
+                                        </label>
+                                    </div>
+                                    <div class="form-group" style="margin-top: 1rem;">
+                                        <label class="form-label">If No, state the reasons</label>
+                                        <textarea id="regulatoryApprovalReasons" class="form-textarea" rows="2" placeholder="Provide reasons for not having regulatory approvals"></textarea>
+                                    </div>
+                                </div>
+                                
+                                <div class="form-group">
+                                    <label class="form-label">Does the supplier have any insolvency or bankruptcy declarations arising within the verification period?</label>
+                                    <div class="radio-group">
+                                        <label class="radio-item">
+                                            <input type="radio" name="insolvency" value="no">
+                                            No
+                                        </label>
+                                        <label class="radio-item">
+                                            <input type="radio" name="insolvency" value="yes">
+                                            Yes
+                                        </label>
+                                    </div>
+                                    <div class="form-group" style="margin-top: 1rem;">
+                                        <label class="form-label">If Yes, state the details of the declarations</label>
+                                        <textarea id="insolvencyDetails" class="form-textarea" rows="3" placeholder="Provide insolvency/bankruptcy declaration details"></textarea>
+                                    </div>
+                                </div>
+                                
+                                <div class="form-group">
+                                    <label class="form-label">Process Flow and Organogram</label>
+                                    <div class="radio-group">
+                                        <label class="radio-item">
+                                            <input type="radio" name="processFlowProvided" value="no">
+                                            No
+                                        </label>
+                                        <label class="radio-item">
+                                            <input type="radio" name="processFlowProvided" value="yes">
+                                            Yes
+                                        </label>
+                                    </div>
+                                    <div class="form-group" style="margin-top: 1rem;">
+                                        <label class="form-label">If No, state the reason</label>
+                                        <textarea id="processFlowReason" class="form-textarea" rows="2" placeholder="Provide reason for not providing process flow"></textarea>
+                                    </div>
+                                </div>
+                                
+                                <div class="form-group">
+                                    <label class="form-label">Are there any members of the PAKPRO board of Directors or the PAKPRO Secretariat who are related to anyone in your organization? or who own any shares directly or through proxy?</label>
+                                    <div class="radio-group">
+                                        <label class="radio-item">
+                                            <input type="radio" name="pakproRelations" value="no">
+                                            No
+                                        </label>
+                                        <label class="radio-item">
+                                            <input type="radio" name="pakproRelations" value="yes">
+                                            Yes
+                                        </label>
+                                    </div>
+                                    <div class="form-group" style="margin-top: 1rem;">
+                                        <label class="form-label">If Yes, who and for how long?</label>
+                                        <textarea id="pakproRelationDetails" class="form-textarea" rows="3" placeholder="Provide details of PAKPRO relations"></textarea>
+                                    </div>
+                                </div>
+                                
+                                <div class="form-group">
+                                    <label class="form-label">Are there any of your waste collectors or suppliers below the age of 18 years of age?</label>
+                                    <div class="radio-group">
+                                        <label class="radio-item">
+                                            <input type="radio" name="childLabour" value="no">
+                                            No
+                                        </label>
+                                        <label class="radio-item">
+                                            <input type="radio" name="childLabour" value="yes">
+                                            Yes
+                                        </label>
+                                    </div>
+                                    <div class="form-group" style="margin-top: 1rem;">
+                                        <label class="form-label">If No, what is the verification process?</label>
+                                        <textarea id="childLabourVerification" class="form-textarea" rows="3" placeholder="Describe the age verification process"></textarea>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Validation Process Tab -->
+                    <div id="validationTab" class="tab-content">
+                        <div class="card">
+                            <div class="card-header">
+                                <h3 class="card-title">
+                                    <i class="fas fa-check-double"></i>
+                                    Section 3: Validation and Verification Process
+                                </h3>
+                            </div>
+                            
+                            <div class="form-group">
+                                <label class="form-label">If you have them, have there been any spot-checks at any of your collection centres/aggregation centres by PAKPRO?</label>
+                                <div class="radio-group">
+                                    <label class="radio-item">
+                                        <input type="radio" name="spotChecks" value="no">
+                                        No
+                                    </label>
+                                    <label class="radio-item">
+                                        <input type="radio" name="spotChecks" value="yes">
+                                        Yes
+                                    </label>
+                                </div>
+                            </div>
+
+                            <div class="form-group">
+                                <label class="form-label">Have you rejected any used post-consumer material supplied to your facility after payment?</label>
+                                <div class="radio-group">
+                                    <label class="radio-item">
+                                        <input type="radio" name="rejectedMaterial" value="no">
+                                        No
+                                    </label>
+                                    <label class="radio-item">
+                                        <input type="radio" name="rejectedMaterial" value="yes">
+                                        Yes
+                                    </label>
+                                </div>
+                                <div class="form-group" style="margin-top: 1rem;">
+                                    <label class="form-label">If Yes, what were the reasons and what volumes?</label>
+                                    <textarea id="rejectionReasons" class="form-textarea" rows="3" placeholder="Provide reasons and volumes"></textarea>
+                                </div>
+                            </div>
+
+                            <div class="form-group">
+                                <label class="form-label">Are there any amendments to the contract that need to be captured in this validation/verification audit process?</label>
+                                <div class="radio-group">
+                                    <label class="radio-item">
+                                        <input type="radio" name="contractAmendments" value="no">
+                                        No
+                                    </label>
+                                    <label class="radio-item">
+                                        <input type="radio" name="contractAmendments" value="yes">
+                                        Yes
+                                    </label>
+                                </div>
+                                <div class="form-group" style="margin-top: 1rem;">
+                                    <label class="form-label">If Yes, what material amendments?</label>
+                                    <textarea id="amendmentDetails" class="form-textarea" rows="3" placeholder="Describe the amendments"></textarea>
+                                </div>
+                            </div>
+
+                            <div class="form-group">
+                                <label class="form-label">Additional Comments</label>
+                                <textarea id="additionalComments" class="form-textarea" rows="4" placeholder="Any additional comments or observations"></textarea>
+                            </div>
+
+                            <div class="form-group">
+                                <label class="form-label">Did the Auditor conduct the validation or verification/certification activity competently?</label>
+                                <div class="radio-group">
+                                    <label class="radio-item">
+                                        <input type="radio" name="auditorCompetency" value="yes">
+                                        Yes
+                                    </label>
+                                    <label class="radio-item">
+                                        <input type="radio" name="auditorCompetency" value="no">
+                                        No
+                                    </label>
+                                </div>
+                                <div class="form-group" style="margin-top: 1rem;">
+                                    <label class="form-label">If No, why?</label>
+                                    <textarea id="auditorCompetencyReasons" class="form-textarea" rows="3" placeholder="Explain why the auditor was not competent"></textarea>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Materials & Calculations Tab -->
+                    <div id="materialsTab" class="tab-content">
+                        <div class="card">
+                            <div class="card-header">
+                                <h3 class="card-title">
+                                    <i class="fas fa-calculator"></i>
+                                    Materials & CPAF Calculations
+                                </h3>
+                            </div>
+                            
+                            <div class="form-group">
+                                <label class="form-label">Material Calculations</label>
+                                <div id="calculationsContainer">
+                                    <div class="calculation-row">
+                                        <div>
+                                            <label class="form-label" style="font-size: 0.875rem;">Recycled Material</label>
+                                            <input type="text" class="form-input material-type" placeholder="Material type">
+                                        </div>
+                                        <div>
+                                            <label class="form-label" style="font-size: 0.875rem;">Audited Volume (Kg)</label>
+                                            <input type="number" class="form-input audited-volume" placeholder="0" oninput="calculateRowCPAF(this)">
+                                        </div>
+                                        <div>
+                                            <label class="form-label" style="font-size: 0.875rem;">Set Limit (Kg)</label>
+                                            <input type="number" class="form-input set-limit" placeholder="0" oninput="calculateRowCPAF(this)">
+                                        </div>
+                                        <div>
+                                            <label class="form-label" style="font-size: 0.875rem;">Subsidized Volume (Kg)</label>
+                                            <input type="number" class="form-input subsidized-volume" placeholder="0" oninput="calculateRowCPAF(this)">
+                                        </div>
+                                        <div>
+                                            <label class="form-label" style="font-size: 0.875rem;">CPAF Rate (KES)</label>
+                                            <input type="number" class="form-input cpaf-rate" placeholder="0" step="0.01" oninput="calculateRowCPAF(this)">
+                                        </div>
+                                        <div>
+                                            <label class="form-label" style="font-size: 0.875rem;">CPAF Payable (KES)</label>
+                                            <input type="number" class="form-input cpaf-payable" placeholder="0" readonly>
+                                        </div>
+                                        <div>
+                                            <button type="button" class="btn btn-danger" style="padding: 0.5rem;" onclick="removeCalculationRow(this)">
+                                                <i class="fas fa-trash"></i>
+                                            </button>
+                                        </div>
+                                    </div>
+                                    <!-- Totals Row -->
+                                    <div class="calculation-row totals-row">
+                                        <div><strong>TOTAL</strong></div>
+                                        <div><input type="number" id="totalAuditedVolume" readonly></div>
+                                        <div><input type="number" id="totalSetLimit" readonly></div>
+                                        <div><input type="number" id="totalSubsidizedVolume" readonly></div>
+                                        <div>-</div>
+                                        <div><input type="number" id="totalCPAFPayable" readonly></div>
+                                        <div></div>
+                                    </div>
+                                </div>
+                                <button type="button" class="btn btn-outline" onclick="addCalculationRow()">
+                                    <i class="fas fa-plus"></i> Add Material Row
+                                </button>
+                            </div>
+
+                            <div class="form-row" style="margin-top: 2rem;">
+                                <div class="form-group">
+                                    <label class="form-label">Purchased Volume (MT)</label>
+                                    <input type="number" id="purchasedVolume" class="form-input" step="0.01" oninput="calculateTotals()">
+                                </div>
+                                
+                                <div class="form-group">
+                                    <label class="form-label">Processed Volume (MT)</label>
+                                    <input type="number" id="processedVolume" class="form-input" step="0.01" oninput="calculateTotals()">
+                                </div>
+                            </div>
+                            
+                            <div class="form-row">
+                                <div class="form-group">
+                                    <label class="form-label">Rejected Volume (MT)</label>
+                                    <input type="number" id="rejectedVolume" class="form-input" step="0.01" oninput="calculateTotals()">
+                                </div>
+                                
+                                <div class="form-group">
+                                    <label class="form-label">Contract Limit (KES)</label>
+                                    <input type="number" id="contractLimit" class="form-input" step="0.01">
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Signatures Tab -->
+                    <div id="signaturesTab" class="tab-content">
+                        <div class="card">
+                            <div class="card-header">
+                                <h3 class="card-title">
+                                    <i class="fas fa-signature"></i>
+                                    Digital Signatures
+                                </h3>
+                            </div>
+                            
+                            <!-- PAKPRO CEO Signature -->
+                            <div class="signature-section">
+                                <h4 style="margin-bottom: 1rem;">PAKPRO CEO Signature</h4>
+                                <canvas id="pakproCeoSignature" class="signature-canvas" width="600" height="200"></canvas>
+                                <div class="signature-controls">
+                                    <button type="button" class="btn btn-secondary" onclick="clearSignature('pakproCeo')">
+                                        <i class="fas fa-eraser"></i>
+                                        Clear
+                                    </button>
+                                    <button type="button" class="btn btn-outline" onclick="saveSignature('pakproCeo')">
+                                        <i class="fas fa-save"></i>
+                                        Save Signature
+                                    </button>
+                                </div>
+                                <div class="signature-upload">
+                                    <div class="file-upload-wrapper">
+                                        <input type="file" id="pakproCeoUpload" class="file-upload-input" accept="image/*" onchange="uploadSignature('pakproCeo', this)">
+                                        <label for="pakproCeoUpload" class="file-upload-button">
+                                            <i class="fas fa-upload"></i>
+                                            Upload Signature
+                                        </label>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <!-- Recycler Signature -->
+                            <div class="signature-section">
+                                <h4 style="margin-bottom: 1rem;">Recycler Representative Signature</h4>
+                                <canvas id="recyclerSignature" class="signature-canvas" width="600" height="200"></canvas>
+                                <div class="signature-controls">
+                                    <button type="button" class="btn btn-secondary" onclick="clearSignature('recycler')">
+                                        <i class="fas fa-eraser"></i>
+                                        Clear
+                                    </button>
+                                    <button type="button" class="btn btn-outline" onclick="saveSignature('recycler')">
+                                        <i class="fas fa-save"></i>
+                                        Save Signature
+                                    </button>
+                                </div>
+                                <div class="signature-upload">
+                                    <div class="file-upload-wrapper">
+                                        <input type="file" id="recyclerUpload" class="file-upload-input" accept="image/*" onchange="uploadSignature('recycler', this)">
+                                        <label for="recyclerUpload" class="file-upload-button">
+                                            <i class="fas fa-upload"></i>
+                                            Upload Signature
+                                        </label>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <!-- Auditor Signature -->
+                            <div class="signature-section">
+                                <h4 style="margin-bottom: 1rem;">Auditor Signature</h4>
+                                <canvas id="auditorSignature" class="signature-canvas" width="600" height="200"></canvas>
+                                <div class="signature-controls">
+                                    <button type="button" class="btn btn-secondary" onclick="clearSignature('auditor')">
+                                        <i class="fas fa-eraser"></i>
+                                        Clear
+                                    </button>
+                                    <button type="button" class="btn btn-outline" onclick="saveSignature('auditor')">
+                                        <i class="fas fa-save"></i>
+                                        Save Signature
+                                    </button>
+                                </div>
+                                <div class="signature-upload">
+                                    <div class="file-upload-wrapper">
+                                        <input type="file" id="auditorUpload" class="file-upload-input" accept="image/*" onchange="uploadSignature('auditor', this)">
+                                        <label for="auditorUpload" class="file-upload-button">
+                                            <i class="fas fa-upload"></i>
+                                            Upload Signature
+                                        </label>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Form Actions -->
+                    <div style="padding: 2rem; border-top: 1px solid var(--gray-200); background: var(--gray-50);">
+                        <div style="display: flex; gap: 1rem; justify-content: space-between;">
+                            <div>
+                                <button type="button" class="btn btn-secondary" onclick="saveDraft()">
+                                    <i class="fas fa-save"></i>
+                                    Save Draft
+                                </button>
+                            </div>
+                            <div style="display: flex; gap: 1rem;">
+                                <button type="button" class="btn btn-outline" onclick="resetForm()">
+                                    <i class="fas fa-undo"></i>
+                                    Reset Form
+                                </button>
+                                <button type="button" class="btn btn-success" onclick="submitAudit()">
+                                    <i class="fas fa-check"></i>
+                                    Submit Audit
+                                </button>
+                            </div>
+                        </div>
+                        <div style="margin-top: 1rem; font-size: 0.875rem; color: var(--gray-600);">
+                            <i class="fas fa-info-circle"></i>
+                            Auto-save is enabled. Your progress is automatically saved every 30 seconds.
+                        </div>
+                    </div>
+                </section>
+
+                <!-- Audit List Section -->
+                <section id="auditListSection" class="hidden">
+                    <div style="padding: 2rem;">
+                        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 2rem;">
+                            <div>
+                                <h2 style="font-size: 1.875rem; font-weight: 700; color: var(--gray-800); margin-bottom: 0.5rem;">
+                                    Audit Management
+                                </h2>
+                                <p style="color: var(--gray-600);">View, search, and manage all audit records</p>
+                            </div>
+                            <button class="btn btn-primary" onclick="showSection('newAudit')">
+                                <i class="fas fa-plus"></i>
+                                New Audit
+                            </button>
+                        </div>
+
+                        <!-- Search and Filters -->
+                        <div class="card">
+                            <div class="card-header">
+                                <h3 class="card-title">
+                                    <i class="fas fa-search"></i>
+                                    Search & Filters
+                                </h3>
+                            </div>
+                            
+                            <div class="form-row">
+                                <div class="form-group">
+                                    <label class="form-label">Search Entity</label>
+                                    <input type="text" id="searchEntity" class="form-input" placeholder="Search by entity name...">
+                                </div>
+                                
+                                <div class="form-group">
+                                    <label class="form-label">Status Filter</label>
+                                    <select id="statusFilter" class="form-select">
+                                        <option value="">All Status</option>
+                                        <option value="draft">Draft</option>
+                                        <option value="pending">Pending Review</option>
+                                        <option value="in_review">In Review</option>
+                                        <option value="finalized">Finalized</option>
+                                    </select>
+                                </div>
+                            </div>
+                            
+                            <div style="display: flex; gap: 1rem; margin-top: 1rem;">
+                                <button class="btn btn-primary" onclick="searchAudits()">
+                                    <i class="fas fa-search"></i>
+                                    Search
+                                </button>
+                                <button class="btn btn-outline" onclick="clearFilters()">
+                                    <i class="fas fa-times"></i>
+                                    Clear Filters
+                                </button>
+                            </div>
+                        </div>
+
+                        <!-- Audit List Table -->
+                        <div class="table-container">
+                            <table class="table">
+                                <thead>
+                                    <tr>
+                                        <th>ID</th>
+                                        <th>Entity Name</th>
+                                        <th>Contract Ref</th>
+                                        <th>Status</th>
+                                        <th>Progress</th>
+                                        <th>Created Date</th>
+                                        <th>Actions</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="auditListTable">
+                                    <tr>
+                                        <td>1</td>
+                                        <td>Eco Post Kenya Ltd</td>
+                                        <td>CT-KE-2024-001</td>
+                                        <td><span class="status-badge status-finalized">finalized</span></td>
+                                        <td>
+                                            <div style="display: flex; align-items: center; gap: 0.5rem;">
+                                                <div class="progress-bar" style="flex: 1; height: 6px;">
+                                                    <div class="progress-fill" style="width: 100%"></div>
+                                                </div>
+                                                <span style="font-size: 0.75rem;">100%</span>
+                                            </div>
+                                        </td>
+                                        <td>Jan 15, 2024</td>
+                                        <td>
+                                            <div style="display: flex; gap: 0.5rem;">
+                                                <button class="btn btn-outline" style="padding: 0.25rem 0.5rem; font-size: 0.75rem;" onclick="editAudit('1')">
+                                                    <i class="fas fa-edit"></i>
+                                                </button>
+                                                <button class="btn btn-danger" style="padding: 0.25rem 0.5rem; font-size: 0.75rem;" onclick="confirmDeleteAudit('1')">
+                                                    <i class="fas fa-trash"></i>
+                                                </button>
+                                            </div>
+                                        </td>
+                                    </tr>
+                                    <tr>
+                                        <td>2</td>
+                                        <td>Green Cycle Industries</td>
+                                        <td>CT-KE-2024-002</td>
+                                        <td><span class="status-badge status-pending">pending</span></td>
+                                        <td>
+                                            <div style="display: flex; align-items: center; gap: 0.5rem;">
+                                                <div class="progress-bar" style="flex: 1; height: 6px;">
+                                                    <div class="progress-fill" style="width: 75%"></div>
+                                                </div>
+                                                <span style="font-size: 0.75rem;">75%</span>
+                                            </div>
+                                        </td>
+                                        <td>Jan 18, 2024</td>
+                                        <td>
+                                            <div style="display: flex; gap: 0.5rem;">
+                                                <button class="btn btn-outline" style="padding: 0.25rem 0.5rem; font-size: 0.75rem;" onclick="editAudit('2')">
+                                                    <i class="fas fa-edit"></i>
+                                                </button>
+                                                <button class="btn btn-danger" style="padding: 0.25rem 0.5rem; font-size: 0.75rem;" onclick="confirmDeleteAudit('2')">
+                                                    <i class="fas fa-trash"></i>
+                                                </button>
+                                            </div>
+                                        </td>
+                                    </tr>
+                                    <tr>
+                                        <td>3</td>
+                                        <td>Nakuru Waste Management</td>
+                                        <td>CT-KE-2024-003</td>
+                                        <td><span class="status-badge status-draft">draft</span></td>
+                                        <td>
+                                            <div style="display: flex; align-items: center; gap: 0.5rem;">
+                                                <div class="progress-bar" style="flex: 1; height: 6px;">
+                                                    <div class="progress-fill" style="width: 45%"></div>
+                                                </div>
+                                                <span style="font-size: 0.75rem;">45%</span>
+                                            </div>
+                                        </td>
+                                        <td>Jan 20, 2024</td>
+                                        <td>
+                                            <div style="display: flex; gap: 0.5rem;">
+                                                <button class="btn btn-outline" style="padding: 0.25rem 0.5rem; font-size: 0.75rem;" onclick="editAudit('3')">
+                                                    <i class="fas fa-edit"></i>
+                                                </button>
+                                                <button class="btn btn-danger" style="padding: 0.25rem 0.5rem; font-size: 0.75rem;" onclick="confirmDeleteAudit('3')">
+                                                    <i class="fas fa-trash"></i>
+                                                </button>
+                                            </div>
+                                        </td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </section>
+
+                <!-- Analytics Section -->
+                <section id="analyticsSection" class="hidden">
+                    <div style="padding: 2rem;">
+                        <div style="margin-bottom: 2rem;">
+                            <h2 style="font-size: 1.875rem; font-weight: 700; color: var(--gray-800); margin-bottom: 0.5rem;">
+                                Advanced Analytics
+                            </h2>
+                            <p style="color: var(--gray-600);">Comprehensive audit analytics and performance insights for Kenya operations</p>
+                        </div>
+
+                        <div class="stats-grid">
+                            <div class="stat-card">
+                                <div class="stat-icon">
+                                    <i class="fas fa-percentage"></i>
+                                </div>
+                                <div class="stat-value" id="completionRate">85%</div>
+                                <div class="stat-label">Average Completion Rate</div>
+                            </div>
+                            
+                            <div class="stat-card">
+                                <div class="stat-icon" style="background: linear-gradient(135deg, var(--secondary-color) 0%, var(--success-color) 100%);">
+                                    <i class="fas fa-coins"></i>
+                                </div>
+                                <div class="stat-value" id="totalCPAF">KSh 364,000</div>
+                                <div class="stat-label">Total CPAF Payable</div>
+                            </div>
+                            
+                            <div class="stat-card">
+                                <div class="stat-icon" style="background: linear-gradient(135deg, var(--accent-color) 0%, var(--warning-color) 100%);">
+                                    <i class="fas fa-recycle"></i>
+                                </div>
+                                <div class="stat-value" id="totalSubsidized">2,400 MT</div>
+                                <div class="stat-label">Total Subsidized Volume</div>
+                            </div>
+                            
+                            <div class="stat-card">
+                                <div class="stat-icon" style="background: linear-gradient(135deg, var(--primary-color) 0%, var(--primary-dark) 100%);">
+                                    <i class="fas fa-clock"></i>
+                                </div>
+                                <div class="stat-value" id="avgProcessingTime">7 days</div>
+                                <div class="stat-label">Average Processing Time</div>
+                            </div>
+                        </div>
+
+                        <!-- County Performance -->
+                        <div class="card">
+                            <div class="card-header">
+                                <h3 class="card-title">
+                                    <i class="fas fa-map-marker-alt"></i>
+                                    Performance by County
+                                </h3>
+                            </div>
+                            <div class="table-container">
+                                <table class="table">
+                                    <thead>
+                                        <tr>
+                                            <th>County</th>
+                                            <th>Total Audits</th>
+                                            <th>Finalized</th>
+                                            <th>Total CPAF (KES)</th>
+                                            <th>Avg Completion</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        <tr>
+                                            <td>Nairobi County</td>
+                                            <td>8</td>
+                                            <td>6</td>
+                                            <td>KSh 120,000</td>
+                                            <td>92%</td>
+                                        </tr>
+                                        <tr>
+                                            <td>Mombasa County</td>
+                                            <td>5</td>
+                                            <td>4</td>
+                                            <td>KSh 84,000</td>
+                                            <td>88%</td>
+                                        </tr>
+                                        <tr>
+                                            <td>Nakuru County</td>
+                                            <td>6</td>
+                                            <td>4</td>
+                                            <td>KSh 160,000</td>
+                                            <td>75%</td>
+                                        </tr>
+                                        <tr>
+                                            <td>Kisumu County</td>
+                                            <td>3</td>
+                                            <td>2</td>
+                                            <td>KSh 45,000</td>
+                                            <td>80%</td>
+                                        </tr>
+                                        <tr>
+                                            <td>Kiambu County</td>
+                                            <td>2</td>
+                                            <td>2</td>
+                                            <td>KSh 35,000</td>
+                                            <td>95%</td>
+                                        </tr>
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+                </section>
+
+                <!-- Export Center Section -->
+                <section id="exportsSection" class="hidden">
+                    <div style="padding: 2rem;">
+                        <div style="margin-bottom: 2rem;">
+                            <h2 style="font-size: 1.875rem; font-weight: 700; color: var(--gray-800); margin-bottom: 0.5rem;">
+                                Export Center
+                            </h2>
+                            <p style="color: var(--gray-600);">Generate and download comprehensive audit reports for Kenya operations</p>
+                        </div>
+
+                        <div class="card">
+                            <div class="card-header">
+                                <h3 class="card-title">
+                                    <i class="fas fa-file-export"></i>
+                                    Export Options
+                                </h3>
+                            </div>
+
+                            <div class="form-row">
+                                <div class="form-group">
+                                    <label class="form-label">Date Range</label>
+                                    <select id="exportDateRange" class="form-select">
+                                        <option value="all">All Time</option>
+                                        <option value="today">Today</option>
+                                        <option value="week">Last 7 Days</option>
+                                        <option value="month">Last 30 Days</option>
+                                        <option value="quarter">Last 3 Months</option>
+                                        <option value="year">Last Year</option>
+                                        <option value="custom">Custom Range</option>
+                                    </select>
+                                </div>
+                                
+                                <div class="form-group">
+                                    <label class="form-label">Status Filter</label>
+                                    <select id="exportStatusFilter" class="form-select">
+                                        <option value="all">All Status</option>
+                                        <option value="draft">Draft Only</option>
+                                        <option value="pending">Pending Only</option>
+                                        <option value="finalized">Finalized Only</option>
+                                    </select>
+                                </div>
+                            </div>
+
+                            <div id="customDateRange" class="hidden" style="margin: 1rem 0;">
+                                <div class="form-row">
+                                    <div class="form-group">
+                                        <label class="form-label">From Date</label>
+                                        <input type="date" id="exportFromDate" class="form-input">
+                                    </div>
+                                    <div class="form-group">
+                                        <label class="form-label">To Date</label>
+                                        <input type="date" id="exportToDate" class="form-input">
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="form-group">
+                                <label class="form-label">Export Format</label>
+                                <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 1rem; margin-top: 1rem;">
+                                    <button class="btn btn-primary" onclick="exportMultiSheetExcel()">
+                                        <i class="fas fa-file-excel"></i>
+                                        Multi-Sheet Excel
+                                    </button>
+                                    <button class="btn btn-success" onclick="exportCSV()">
+                                        <i class="fas fa-file-csv"></i>
+                                        CSV Format
+                                    </button>
+                                    <button class="btn btn-secondary" onclick="exportJSON()">
+                                        <i class="fas fa-file-code"></i>
+                                        JSON Data
+                                    </button>
+                                    <button class="btn btn-danger" onclick="exportPDF()">
+                                        <i class="fas fa-file-pdf"></i>
+                                        PDF Report
+                                    </button>
+                                </div>
+                            </div>
+
+                            <div class="form-group">
+                                <h4 style="margin-bottom: 1rem; color: var(--gray-700);">Kenya Specific Reports</h4>
+                                <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 1rem;">
+                                    <button class="btn btn-outline" onclick="exportKenyaCountyReport()">
+                                        <i class="fas fa-map-marked-alt"></i>
+                                        County Performance Report
+                                    </button>
+                                    <button class="btn btn-outline" onclick="exportComplianceReport()">
+                                        <i class="fas fa-shield-check"></i>
+                                        ESG Compliance Report
+                                    </button>
+                                    <button class="btn btn-outline" onclick="exportFinancialReport()">
+                                        <i class="fas fa-coins"></i>
+                                        CPAF Financial Report
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </section>
+
+                <!-- Settings Section -->
+                <section id="settingsSection" class="hidden">
+                    <div style="padding: 2rem;">
+                        <div style="margin-bottom: 2rem;">
+                            <h2 style="font-size: 1.875rem; font-weight: 700; color: var(--gray-800); margin-bottom: 0.5rem;">
+                                System Settings
+                            </h2>
+                            <p style="color: var(--gray-600);">Configure system preferences and Kenya-specific settings</p>
+                        </div>
+
+                        <!-- General Settings -->
+                        <div class="card">
+                            <div class="card-header">
+                                <h3 class="card-title">
+                                    <i class="fas fa-cog"></i>
+                                    General Settings
+                                </h3>
+                            </div>
+                            
+                            <div class="form-row">
+                                <div class="form-group">
+                                    <label class="form-label">Default Country</label>
+                                    <select class="form-select">
+                                        <option value="kenya" selected>Kenya</option>
+                                    </select>
+                                </div>
+                                
+                                <div class="form-group">
+                                    <label class="form-label">Default Currency</label>
+                                    <select class="form-select">
+                                        <option value="KES" selected>KES (Kenyan Shillings)</option>
+                                    </select>
+                                </div>
+                            </div>
+                            
+                            <div class="form-row">
+                                <div class="form-group">
+                                    <label class="form-label">Timezone</label>
+                                    <select class="form-select">
+                                        <option value="Africa/Nairobi" selected>East Africa Time (EAT)</option>
+                                    </select>
+                                </div>
+                                
+                                <div class="form-group">
+                                    <label class="form-label">Auto-Save Interval (seconds)</label>
+                                    <input type="number" class="form-input" value="30" min="10" max="300">
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Kenya Specific Settings -->
+                        <div class="card">
+                            <div class="card-header">
+                                <h3 class="card-title">
+                                    <i class="fas fa-flag"></i>
+                                    Kenya Specific Settings
+                                </h3>
+                            </div>
+                            
+                            <div class="form-group">
+                                <label class="form-label">Default Counties</label>
+                                <div class="checkbox-group">
+                                    <label class="checkbox-item">
+                                        <input type="checkbox" checked>
+                                        Nairobi County
+                                    </label>
+                                    <label class="checkbox-item">
+                                        <input type="checkbox" checked>
+                                        Mombasa County
+                                    </label>
+                                    <label class="checkbox-item">
+                                        <input type="checkbox" checked>
+                                        Kisumu County
+                                    </label>
+                                    <label class="checkbox-item">
+                                        <input type="checkbox" checked>
+                                        Nakuru County
+                                    </label>
+                                </div>
+                            </div>
+                            
+                            <div class="form-row">
+                                <div class="form-group">
+                                    <label class="form-label">Default CPAF Rate (KES)</label>
+                                    <input type="number" class="form-input" value="150.00" step="0.01">
+                                </div>
+                                
+                                <div class="form-group">
+                                    <label class="form-label">Minimum Audit Completion (%)</label>
+                                    <input type="number" class="form-input" value="80" min="50" max="100">
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- System Administration -->
+                        <div class="card">
+                            <div class="card-header">
+                                <h3 class="card-title">
+                                    <i class="fas fa-tools"></i>
+                                    System Administration
+                                </h3>
+                            </div>
+                            
+                            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 1rem;">
+                                <button class="btn btn-outline" onclick="backupDatabase()">
+                                    <i class="fas fa-database"></i>
+                                    Backup Database
+                                </button>
+                                <button class="btn btn-outline" onclick="importData()">
+                                    <i class="fas fa-upload"></i>
+                                    Import Data
+                                </button>
+                                <button class="btn btn-warning" onclick="clearAllData()">
+                                    <i class="fas fa-trash-alt"></i>
+                                    Clear All Data
+                                </button>
+                                <button class="btn btn-primary" onclick="refreshDashboard()">
+                                    <i class="fas fa-sync-alt"></i>
+                                    Refresh System
+                                </button>
+                            </div>
+                        </div>
+
+                        <!-- Save Settings Button -->
+                        <div style="margin-top: 2rem; text-align: center;">
+                            <button class="btn btn-success" onclick="saveSettings()">
+                                <i class="fas fa-save"></i>
+                                Save All Settings
+                            </button>
+                        </div>
+                    </div>
+                </section>
+            </main>
         </div>
     </div>
 
+    <!-- Include JavaScript -->
+   <!-- Include JavaScript - Replace your entire <script> section with this -->
     <script>
-        // Global variables
-        let currentUser = null;
-        let currentAuditId = null;
-        let currentAudit = {};
-        let authToken = localStorage.getItem('pakpro_token');
-
-        // API base URL
-        const API_BASE = '/api';
-
-        // Initialize app
+        // ========================================
+        // MINIMAL INITIALIZATION SCRIPT FOR INDEX.HTML
+        // Main functionality is in app.js
+        // ========================================
+        
+        console.log('🇰🇪 PAKPRO Kenya Digital Verification Audit System Ready!');
+        
+        // Initialize when DOM is loaded
         document.addEventListener('DOMContentLoaded', function() {
-            if (authToken) {
-                validateToken();
-            } else {
-                showLogin();
+            // Check if app.js functions are available
+            if (typeof handleLogin === 'undefined') {
+                console.error('app.js not loaded properly. Make sure app.js is in the same directory.');
+                return;
             }
-
-            // Set default dates
-            const today = new Date().toISOString().split('T')[0];
-            document.getElementById('startDate').value = today;
-            document.getElementById('onSiteDate').value = today;
-            document.getElementById('auditDate').value = today;
-
-            // Setup login form
-            document.getElementById('loginForm').addEventListener('submit', handleLogin);
+            
+            console.log('✅ app.js loaded successfully');
         });
-
-        // Authentication functions
-        async function handleLogin(e) {
-            e.preventDefault();
-            
-            const username = document.getElementById('username').value;
-            const password = document.getElementById('password').value;
-
-            try {
-                const response = await fetch(`${API_BASE}/login`, {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                    },
-                    body: JSON.stringify({ username, password }),
-                });
-
-                const data = await response.json();
-
-                if (response.ok) {
-                    authToken = data.token;
-                    currentUser = data.user;
-                    localStorage.setItem('pakpro_token', authToken);
-                    
-                    showApp();
-                    showAlert('Login successful!', 'success');
-                } else {
-                    showLoginAlert(data.error, 'error');
-                }
-            } catch (error) {
-                showLoginAlert('Connection error. Please try again.', 'error');
-                console.error('Login error:', error);
-            }
-        }
-
-        async function validateToken() {
-            try {
-                const response = await fetch(`${API_BASE}/user`, {
-                    headers: {
-                        'Authorization': `Bearer ${authToken}`,
-                    },
-                });
-
-                if (response.ok) {
-                    const data = await response.json();
-                    currentUser = data.user;
-                    showApp();
-                } else {
-                    localStorage.removeItem('pakpro_token');
-                    authToken = null;
-                    showLogin();
-                }
-            } catch (error) {
-                localStorage.removeItem('pakpro_token');
-                authToken = null;
-                showLogin();
-            }
-        }
-
-        function logout() {
-            localStorage.removeItem('pakpro_token');
-            authToken = null;
-            currentUser = null;
-            currentAuditId = null;
-            currentAudit = {};
-            showLogin();
-        }
-
-        function showLogin() {
-            document.getElementById('loginScreen').classList.remove('hidden');
-            document.getElementById('mainApp').classList.add('hidden');
-        }
-
-        function showApp() {
-            document.getElementById('loginScreen').classList.add('hidden');
-            document.getElementById('mainApp').classList.remove('hidden');
-            document.getElementById('userDisplay').textContent = `Welcome, ${currentUser.username}!`;
-            
-            // Show features based on role
-            if (currentUser.role === 'data_analyst') {
-                document.getElementById('userManagementTab').style.display = 'block';
-                document.getElementById('exportAllBtn').style.display = 'inline-block';
-            } else {
-                document.getElementById('userManagementTab').style.display = 'none';
-                document.getElementById('exportAllBtn').style.display = 'none';
-            }
-            
-            loadAudits();
-        }
-
-        // User Management Functions
-        async function loadUsers() {
-            const userList = document.getElementById('userList');
-            userList.innerHTML = '<div class="loading">Loading users...</div>';
-
-            try {
-                const response = await apiCall('/users/list');
-                const data = await response.json();
-
-                if (response.ok) {
-                    displayUsers(data.users);
-                } else {
-                    throw new Error(data.error);
-                }
-            } catch (error) {
-                userList.innerHTML = '<div class="loading">Error loading users: ' + error.message + '</div>';
-                console.error('Load users error:', error);
-            }
-        }
-
-        function displayUsers(users) {
-            const userList = document.getElementById('userList');
-            
-            if (!users || users.length === 0) {
-                userList.innerHTML = '<div class="loading">No users found.</div>';
-                return;
-            }
-
-            let html = '';
-            users.forEach(user => {
-                const isCurrentUser = user.id === currentUser.id;
-                const roleClass = `role-${user.role}`;
-                const lastLogin = user.lastLogin ? new Date(user.lastLogin).toLocaleDateString() : 'Never';
-                
-                html += `
-                    <div class="user-item">
-                        <div class="user-info-detail">
-                            <h4>${user.fullName || user.username} ${isCurrentUser ? '(You)' : ''}</h4>
-                            <div class="user-meta">
-                                <strong>Username:</strong> ${user.username} | 
-                                <strong>Email:</strong> ${user.email}
-                            </div>
-                            <div class="user-meta">
-                                <strong>Department:</strong> ${user.department || 'N/A'} | 
-                                <strong>Last Login:</strong> ${lastLogin}
-                                <span class="role-badge ${roleClass}">${user.role.replace('_', ' ').toUpperCase()}</span>
-                            </div>
-                        </div>
-                        <div style="display: flex; align-items: center; gap: 10px; flex-direction: column;">
-                            ${user.isActive ? 
-                                '<span style="color: #28a745; font-weight: 500;">Active</span>' : 
-                                '<span style="color: #dc3545; font-weight: 500;">Inactive</span>'
-                            }
-                            ${!isCurrentUser ? 
-                                `<button class="btn btn-danger" onclick="confirmDeleteUser(${user.id}, '${user.username}')" style="font-size: 0.8rem; padding: 6px 12px;">Delete</button>` : 
-                                '<span style="font-size: 0.8rem; color: #6c757d;">Cannot delete self</span>'
-                            }
-                        </div>
-                    </div>
-                `;
-            });
-            
-            userList.innerHTML = html;
-        }
-
-        async function confirmDeleteUser(userId, username) {
-            if (!confirm(`Are you sure you want to delete user "${username}"? This action cannot be undone.`)) {
-                return;
-            }
-
-            try {
-                showUserAlert('Deleting user...', 'info');
-                
-                const response = await apiCall(`/users/${userId}`, {
-                    method: 'DELETE'
-                });
-
-                const result = await response.json();
-
-                if (response.ok) {
-                    showUserAlert(`User "${username}" deleted successfully`, 'success');
-                    loadUsers(); // Refresh the user list
-                } else {
-                    showUserAlert('Error deleting user: ' + result.error, 'error');
-                }
-            } catch (error) {
-                showUserAlert('Failed to delete user: ' + error.message, 'error');
-                console.error('Delete user error:', error);
-            }
-        }
-
-        function clearUserForm() {
-            document.getElementById('newUsername').value = '';
-            document.getElementById('newEmail').value = '';
-            document.getElementById('newPassword').value = '';
-            document.getElementById('newFullName').value = '';
-            document.getElementById('newDepartment').value = '';
-            document.getElementById('newRole').value = 'field_auditor';
-        }
-
-        async function createNewUser() {
-            const username = document.getElementById('newUsername').value.trim();
-            const email = document.getElementById('newEmail').value.trim();
-            const password = document.getElementById('newPassword').value.trim();
-            const role = document.getElementById('newRole').value;
-
-            if (!username || !email || !password || !role) {
-                showUserAlert('Please fill in all required fields', 'error');
-                return;
-            }
-
-            const userData = {
-                username, email, password, role,
-                fullName: document.getElementById('newFullName').value.trim(),
-                department: document.getElementById('newDepartment').value.trim()
-            };
-
-            try {
-                showUserAlert('Creating user account...', 'info');
-                
-                const response = await apiCall('/users/create', {
-                    method: 'POST',
-                    body: JSON.stringify(userData)
-                });
-
-                const result = await response.json();
-                
-                if (response.ok) {
-                    showUserAlert(`User "${username}" created successfully!`, 'success');
-                    showUserAlert(`Share these credentials: ${username} / ${password}`, 'info');
-                    clearUserForm();
-                    loadUsers(); // Refresh user list
-                } else {
-                    showUserAlert('Error: ' + result.error, 'error');
-                }
-            } catch (error) {
-                showUserAlert('Failed to create user: ' + error.message, 'error');
-            }
-        }
-
-        // API helper function
-        async function apiCall(endpoint, options = {}) {
-            const config = {
-                headers: {
-                    'Content-Type': 'application/json',
-                    'Authorization': `Bearer ${authToken}`,
-                },
-                ...options,
-            };
-
-            const response = await fetch(`${API_BASE}${endpoint}`, config);
-            
-            if (response.status === 401) {
-                logout();
-                throw new Error('Authentication required');
-            }
-
-            return response;
-        }
-
-        // Navigation
-        function showSection(sectionId) {
-            document.querySelectorAll('.section').forEach(s => s.classList.remove('active'));
-            document.getElementById(sectionId).classList.add('active');
-
-            document.querySelectorAll('.nav-tab').forEach(tab => tab.classList.remove('active'));
-            event.target.classList.add('active');
-        }
-
-        // Alert functions
-        function showAlert(message, type = 'info') {
-            const alertsDiv = document.getElementById('alerts');
-            const alert = document.createElement('div');
-            alert.className = `alert alert-${type}`;
-            alert.textContent = message;
-            alertsDiv.appendChild(alert);
-            
-            setTimeout(() => {
-                if (alert.parentNode) {
-                    alert.parentNode.removeChild(alert);
-                }
-            }, 5000);
-        }
-
-        function showUserAlert(message, type = 'info') {
-            const alertsDiv = document.getElementById('userManagementAlerts');
-            const alert = document.createElement('div');
-            alert.className = `alert alert-${type}`;
-            alert.textContent = message;
-            alertsDiv.appendChild(alert);
-            
-            setTimeout(() => {
-                if (alert.parentNode) {
-                    alert.parentNode.removeChild(alert);
-                }
-            }, 5000);
-        }
-
-        function showLoginAlert(message, type = 'info') {
-            const alertsDiv = document.getElementById('loginAlerts');
-            const alert = document.createElement('div');
-            alert.className = `alert alert-${type}`;
-            alert.textContent = message;
-            alertsDiv.appendChild(alert);
-            
-            setTimeout(() => {
-                if (alert.parentNode) {
-                    alert.parentNode.removeChild(alert);
-                }
-            }, 5000);
-        }
-
-        // Audit management functions
-        function newAudit() {
-            currentAuditId = null;
-            currentAudit = {};
-            
-            // Reset all forms
-            document.querySelectorAll('form').forEach(form => form.reset());
-            
-            // Set default dates
-            const today = new Date().toISOString().split('T')[0];
-            document.getElementById('startDate').value = today;
-            document.getElementById('onSiteDate').value = today;
-            document.getElementById('auditDate').value = today;
-            
-            showSection('general');
-            document.getElementById('deleteBtn').style.display = 'none';
-            showAlert('New audit started', 'success');
-        }
-
-        async function loadAudits() {
-            const auditList = document.getElementById('auditList');
-            auditList.innerHTML = '<div class="loading">Loading audits...</div>';
-
-            try {
-                const search = document.getElementById('searchInput').value;
-                const status = document.getElementById('statusFilter').value;
-                
-                let url = '/audits';
-                const params = new URLSearchParams();
-                if (search) params.append('search', search);
-                if (status) params.append('status', status);
-                if (params.toString()) url += '?' + params.toString();
-
-                const response = await apiCall(url);
-                const data = await response.json();
-
-                if (response.ok) {
-                    displayAudits(data.audits);
-                } else {
-                    throw new Error(data.error);
-                }
-            } catch (error) {
-                auditList.innerHTML = '<div class="loading">Error loading audits: ' + error.message + '</div>';
-                console.error('Load audits error:', error);
-            }
-        }
-
-        function displayAudits(audits) {
-            const auditList = document.getElementById('auditList');
-            
-            if (!audits || audits.length === 0) {
-                auditList.innerHTML = '<div class="loading">No audits found. Click "New Audit" to create one.</div>';
-                return;
-            }
-
-            let html = '';
-            audits.forEach(audit => {
-                const statusClass = `status-${audit.status}`;
-                const entityName = audit.entityName || 'Unnamed Entity';
-                const contractRef = audit.contractRef || 'No Contract Ref';
-                
-                // Role-based button display
-                let actionButtons = `<button class="btn btn-primary" onclick="loadAudit('${audit.id}')">Load</button>`;
-                
-                if (currentUser.role === 'data_analyst') {
-                    // Data analysts see export and delete buttons
-                    actionButtons += `
-                        <button class="btn btn-success" onclick="exportSingleAudit('${audit.id}')" style="font-size: 0.8rem; padding: 8px 12px;">Export</button>
-                        <button class="btn btn-danger" onclick="confirmDeleteAudit('${audit.id}')" style="font-size: 0.8rem; padding: 8px 12px;">Delete</button>
-                    `;
-                } else if (currentUser.role === 'field_auditor' && audit.createdBy === currentUser.username) {
-                    // Field auditors can only export their own audits
-                    actionButtons += `<button class="btn btn-success" onclick="exportSingleAudit('${audit.id}')" style="font-size: 0.8rem; padding: 8px 12px;">Export</button>`;
-                }
-                
-                html += `
-                    <div class="audit-item">
-                        <div class="audit-info">
-                            <h3>${entityName}</h3>
-                            <div class="audit-meta">
-                                <span><strong>ID:</strong> ${audit.id}</span>
-                                <span><strong>Contract:</strong> ${contractRef}</span>
-                                <span><strong>Created by:</strong> ${audit.createdBy}</span>
-                            </div>
-                            <div class="audit-meta">
-                                <span><strong>Created:</strong> ${new Date(audit.createdAt).toLocaleDateString()}</span>
-                                <span><strong>Updated:</strong> ${new Date(audit.updatedAt).toLocaleDateString()}</span>
-                                ${audit.completionPercentage ? `<span><strong>Progress:</strong> ${audit.completionPercentage}%</span>` : ''}
-                            </div>
-                        </div>
-                        <div style="display: flex; align-items: center; gap: 10px; flex-wrap: wrap;">
-                            <span class="status-badge ${statusClass}">${audit.status.toUpperCase().replace('_', ' ')}</span>
-                            ${actionButtons}
-                        </div>
-                    </div>
-                `;
-            });
-            
-            auditList.innerHTML = html;
-        }
-
-        // Confirmation before deleting audit (analysts only)
-        async function confirmDeleteAudit(auditId) {
-            if (!confirm('Are you sure you want to delete this audit? This action cannot be undone.')) {
-                return;
-            }
-
-            try {
-                const response = await apiCall(`/audits/${auditId}`, {
-                    method: 'DELETE'
-                });
-
-                const result = await response.json();
-
-                if (response.ok) {
-                    showAlert('Audit deleted successfully', 'success');
-                    loadAudits(); // Refresh the list
-                } else {
-                    showAlert('Error deleting audit: ' + result.error, 'error');
-                }
-            } catch (error) {
-                showAlert('Failed to delete audit: ' + error.message, 'error');
-                console.error('Delete error:', error);
-            }
-        }
-
-        async function loadAudit(auditId) {
-            try {
-                const response = await apiCall(`/audits/${auditId}`);
-                const data = await response.json();
-
-                if (response.ok) {
-                    currentAuditId = auditId;
-                    currentAudit = data.audit;
-                    populateForms();
-                    showSection('general');
-                    
-                    // Show delete button only for data analysts
-                    const deleteBtn = document.getElementById('deleteBtn');
-                    if (currentUser.role === 'data_analyst') {
-                        deleteBtn.style.display = 'inline-block';
-                    } else {
-                        deleteBtn.style.display = 'none';
-                    }
-                    
-                    showAlert('Audit loaded: ' + auditId, 'info');
-                } else {
-                    throw new Error(data.error);
-                }
-            } catch (error) {
-                showAlert('Error loading audit: ' + error.message, 'error');
-                console.error('Load audit error:', error);
-            }
-        }
-
-        function collectFormData() {
-            const generalForm = document.getElementById('generalForm');
-            const validationForm = document.getElementById('validationForm');
-            const conclusionsForm = document.getElementById('conclusionsForm');
-
-            const generalInfo = Object.fromEntries(new FormData(generalForm));
-            const validation = Object.fromEntries(new FormData(validationForm));
-            const conclusions = Object.fromEntries(new FormData(conclusionsForm));
-
-            return { generalInfo, validation, conclusions };
-        }
-
-        function populateForms() {
-            // General Info
-            if (currentAudit.generalInfo) {
-                Object.entries(currentAudit.generalInfo).forEach(([key, value]) => {
-                    const field = document.getElementById(key);
-                    if (field) field.value = value || '';
-                });
-            }
-
-            // Validation
-            if (currentAudit.validation) {
-                Object.entries(currentAudit.validation).forEach(([key, value]) => {
-                    const field = document.getElementById(key);
-                    if (field) field.value = value || '';
-                });
-            }
-
-            // Conclusions
-            if (currentAudit.conclusions) {
-                Object.entries(currentAudit.conclusions).forEach(([key, value]) => {
-                    const field = document.getElementById(key);
-                    if (field) field.value = value || '';
-                });
-            }
-        }
-
-        function validateBasicFields() {
-            const entityName = document.getElementById('entityName').value.trim();
-            const contractRef = document.getElementById('contractRef').value.trim();
-
-            if (!entityName || !contractRef) {
-                showAlert('Please fill in Entity Name and Contract Reference', 'error');
-                return false;
-            }
-            return true;
-        }
-
-        function validateAllFields() {
-            if (!validateBasicFields()) return false;
-            
-            const assessmentStatus = document.getElementById('assessmentStatus').value;
-            const auditTeamLeader = document.getElementById('auditTeamLeader').value.trim();
-            const auditDate = document.getElementById('auditDate').value;
-
-            if (!assessmentStatus || !auditTeamLeader || !auditDate) {
-                showAlert('Please fill in all required fields in the Conclusions section', 'error');
-                return false;
-            }
-            return true;
-        }
-
-        async function saveDraft() {
-            if (!validateBasicFields()) return;
-            
-            const formData = collectFormData();
-            await saveAuditData({ ...formData, status: 'draft' });
-        }
-
-        async function saveAudit() {
-            if (!validateBasicFields()) return;
-            
-            const formData = collectFormData();
-            await saveAuditData({ ...formData, status: 'pending_review' });
-        }
-
-        async function finalizeAudit() {
-            if (!validateAllFields()) return;
-            
-            const formData = collectFormData();
-            await saveAuditData({ ...formData, status: 'finalized' });
-        }
-
-        async function saveAuditData(data) {
-            try {
-                showAlert('Saving audit...', 'info');
-                
-                const payload = {
-                    id: currentAuditId,
-                    ...data
+        
+        // These functions are called by the HTML but defined in app.js
+        // Just ensure they exist or provide fallbacks
+        
+        function ensureFunctionExists(funcName) {
+            if (typeof window[funcName] === 'undefined') {
+                console.warn(`Function ${funcName} not found in app.js`);
+                window[funcName] = function() {
+                    console.warn(`${funcName} called but not implemented`);
                 };
-
-                const response = await apiCall('/audits', {
-                    method: 'POST',
-                    body: JSON.stringify(payload),
-                });
-
-                const result = await response.json();
-
-                if (response.ok) {
-                    currentAuditId = result.audit.id;
-                    showAlert(`Audit ${result.audit.action} successfully!`, 'success');
-                    loadAudits(); // Refresh the audit list
-                } else {
-                    throw new Error(result.error);
-                }
-            } catch (error) {
-                showAlert('Error saving audit: ' + error.message, 'error');
-                console.error('Save audit error:', error);
             }
         }
-
-        async function deleteAudit() {
-            if (!currentAuditId) {
-                showAlert('No audit selected to delete', 'error');
-                return;
-            }
-            
-            if (!confirm('Are you sure you want to delete this audit? This action cannot be undone.')) {
-                return;
-            }
-
-            try {
-                const response = await apiCall(`/audits/${currentAuditId}`, {
-                    method: 'DELETE',
-                });
-
-                const result = await response.json();
-
-                if (response.ok) {
-                    showAlert('Audit deleted successfully', 'success');
-                    
-                    // Reset current audit
-                    currentAuditId = null;
-                    currentAudit = {};
-                    document.querySelectorAll('form').forEach(form => form.reset());
-                    document.getElementById('deleteBtn').style.display = 'none';
-                    
-                    loadAudits();
-                    showSection('dashboard');
-                } else {
-                    throw new Error(result.error);
-                }
-            } catch (error) {
-                showAlert('Error deleting audit: ' + error.message, 'error');
-                console.error('Delete audit error:', error);
-            }
-        }
-
-        // Excel export functions
-        async function exportAllAudits() {
-            try {
-                showAlert('Generating Excel export...', 'info');
-                
-                const response = await apiCall('/audits/export');
-                
-                if (response.ok) {
-                    // Create download
-                    const blob = await response.blob();
-                    const url = window.URL.createObjectURL(blob);
-                    const a = document.createElement('a');
-                    a.href = url;
-                    a.download = `PAKPRO_Audits_${new Date().toISOString().split('T')[0]}.xlsx`;
-                    document.body.appendChild(a);
-                    a.click();
-                    document.body.removeChild(a);
-                    window.URL.revokeObjectURL(url);
-                    
-                    showAlert('Excel file downloaded successfully!', 'success');
-                } else {
-                    throw new Error('Export failed');
-                }
-            } catch (error) {
-                showAlert('Failed to export audits: ' + error.message, 'error');
-                console.error('Export error:', error);
-            }
-        }
-
-        async function exportSingleAudit(auditId) {
-            try {
-                showAlert('Generating audit report...', 'info');
-                
-                const response = await apiCall(`/audits/${auditId}/export`);
-                
-                if (response.ok) {
-                    // Create download
-                    const blob = await response.blob();
-                    const url = window.URL.createObjectURL(blob);
-                    const a = document.createElement('a');
-                    a.href = url;
-                    a.download = `PAKPRO_Audit_${auditId}.xlsx`;
-                    document.body.appendChild(a);
-                    a.click();
-                    document.body.removeChild(a);
-                    window.URL.revokeObjectURL(url);
-                    
-                    showAlert('Audit report downloaded successfully!', 'success');
-                } else {
-                    throw new Error('Export failed');
-                }
-            } catch (error) {
-                showAlert('Failed to export audit: ' + error.message, 'error');
-                console.error('Export error:', error);
-            }
-        }
+        
+        // Ensure all required functions exist
+        [
+            'showSection', 'switchTab', 'logout', 'toggleTheme', 'refreshDashboard',
+            'saveDraft', 'submitAudit', 'resetForm', 'calculateTotals', 'calculateCPAF',
+            'addSupplierRow', 'removeSupplierRow', 'addCalculationRow', 'removeCalculationRow',
+            'calculateRowCPAF', 'clearSignature', 'saveSignature', 'uploadSignature',
+            'editAudit', 'confirmDeleteAudit', 'searchAudits', 'clearFilters',
+            'exportMultiSheetExcel', 'exportCSV', 'exportJSON', 'exportPDF',
+            'toggleOnsiteDetails', 'saveSettings', 'backupDatabase', 'importData', 'clearAllData'
+        ].forEach(ensureFunctionExists);
     </script>
+    
+    <!-- Make sure to include app.js after the above script -->
+    <script src="app.js"></script>
+    <script>
+        console.log('🇰🇪 PAKPRO Kenya Digital Verification Audit System Ready!');
+    </script>
+    
+    <!-- TEMPORARY DEBUG SCRIPT -->
+    <script>
+        window.addEventListener('load', function() {
+            console.log('=== DEBUGGING INFO ===');
+            console.log('app.js loaded:', typeof handleLogin !== 'undefined');
+            console.log('showSection function:', typeof showSection);
+            console.log('updateDashboardStats function:', typeof updateDashboardStats);
+            console.log('saveDraft function:', typeof saveDraft);
+            
+            // Test a button click
+            setTimeout(() => {
+                console.log('Testing if functions work...');
+                if (typeof refreshDashboard === 'function') {
+                    console.log('refreshDashboard function exists');
+                } else {
+                    console.error('refreshDashboard function missing!');
+                }
+            }, 1000);
+        });
+    </script>
+    
 </body>
 </html>

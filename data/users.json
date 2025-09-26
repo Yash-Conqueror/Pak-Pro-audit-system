@@ -9,7 +9,7 @@
     "isActive": true,
     "createdAt": "2025-09-15T07:17:16.142Z",
     "passwordHash": "$2a$10$l6kklTs6aclEYvqGr9jVbuZhzXruIddmNHMDh4uOMHc.Vc0M6BbuK",
-    "lastLogin": "2025-09-15T09:22:40.684Z"
+    "lastLogin": "2025-09-18T05:27:39.913Z"
   },
   {
     "id": 2,
@@ -32,5 +32,17 @@
     "isActive": true,
     "createdAt": "2025-09-15T07:17:16.142Z",
     "passwordHash": "$2a$10$FQgwT0fT1bChKkxWJiL.aOa4gPt3MESHtnt0NkgmUgipQ3A2OQ29W"
+  },
+  {
+    "id": 4,
+    "username": "Miriam",
+    "email": "miriam@pakpro",
+    "passwordHash": "$2a$10$G/xE8f8ZwnRwwkGExJ/o7uDWfnjBn427jvxJMkXRLSMG8XUfYK9eC",
+    "role": "field_auditor",
+    "fullName": "Miriam",
+    "department": "Field Opertions",
+    "isActive": true,
+    "createdAt": "2025-09-15T09:24:47.586Z",
+    "lastLogin": "2025-09-18T04:42:09.754Z"
   }
 ]

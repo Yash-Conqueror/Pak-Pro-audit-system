@@ -1,842 +1,773 @@
-// PAKPRO Audit System - Railway Compatible (No Native Dependencies)
+// ========================================
+// PAKPRO Kenya Digital Verification Audit System
+// Backend Server - Simplified Version
+// Version: 2.0.0 Kenya Edition
+// ========================================
+
 const express = require('express');
-const fs = require('fs').promises;
-const path = require('path');
-const cors = require('cors');
+const sqlite3 = require('sqlite3').verbose();
 const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
+const path = require('path');
+const fs = require('fs').promises;
+const cors = require('cors');
+const helmet = require('helmet');
 const rateLimit = require('express-rate-limit');
-const XLSX = require('xlsx');
+const compression = require('compression');
 
-const app = express();
-const PORT = process.env.PORT || 3000;
-const JWT_SECRET = process.env.JWT_SECRET || 'pakpro-audit-secret-key';
+// ========================================
+// CONFIGURATION - KENYA
+// ========================================
+const CONFIG = {
+    PORT: process.env.PORT || 3000,
+    JWT_SECRET: process.env.JWT_SECRET || 'pakpro_kenya_secret_2024',
+    JWT_EXPIRES_IN: '24h',
+    DATABASE_PATH: './data/pakpro_kenya.db',
+    COUNTRY: 'Kenya',
+    CURRENCY: 'KES'
+};
 
-// Data directory
-const DATA_DIR = './data';
-const USERS_FILE = path.join(DATA_DIR, 'users.json');
-const AUDITS_FILE = path.join(DATA_DIR, 'audits.json');
-const ACTIVITIES_FILE = path.join(DATA_DIR, 'activities.json');
-const NOTIFICATIONS_FILE = path.join(DATA_DIR, 'notifications.json');
+// Kenyan Counties for validation
+const KENYAN_COUNTIES = [
+    'Nairobi County', 'Mombasa County', 'Kisumu County', 'Nakuru County',
+    'Kiambu County', 'Machakos County', 'Kajiado County', 'Kilifi County',
+    'Uasin Gishu County', 'Kakamega County', 'Meru County', 'Nyeri County',
+    'Kericho County', 'Murang\'a County', 'Laikipia County'
+];
 
-// Middleware
-app.use(cors());
-app.use(express.json({ limit: '10mb' }));
-app.use(express.static('public'));
+// ========================================
+// DATABASE SETUP
+// ========================================
+class Database {
+    constructor() {
+        this.db = null;
+    }
+
+    async initialize() {
+        try {
+            // Ensure data directory exists
+            await fs.mkdir('./data', { recursive: true });
+            
+            this.db = new sqlite3.Database(CONFIG.DATABASE_PATH);
+            
+            // Enable foreign keys
+            this.db.run('PRAGMA foreign_keys = ON');
+            
+            await this.createTables();
+            await this.seedDefaultData();
+            
+            console.log('✅ Database initialized successfully');
+        } catch (error) {
+            console.error('❌ Database initialization failed:', error);
+            throw error;
+        }
+    }
+
+    async createTables() {
+        const tables = [
+            // Users table
+            `CREATE TABLE IF NOT EXISTS users (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                username VARCHAR(50) UNIQUE NOT NULL,
+                email VARCHAR(100) UNIQUE NOT NULL,
+                password_hash TEXT NOT NULL,
+                role VARCHAR(20) DEFAULT 'field_auditor',
+                full_name VARCHAR(100),
+                county VARCHAR(50),
+                created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+            )`,
+
+            // Audits table for Kenya
+            `CREATE TABLE IF NOT EXISTS audits (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                entity_name VARCHAR(200) NOT NULL,
+                contract_ref VARCHAR(100) NOT NULL,
+                status VARCHAR(20) DEFAULT 'draft',
+                procurement_location VARCHAR(100),
+                processing_location VARCHAR(100),
+                verification_period_start DATE,
+                verification_period_end DATE,
+                project_title VARCHAR(200),
+                auditee_team_leader VARCHAR(100),
+                auditee_team_members TEXT,
+                purchased_volume DECIMAL(15,2),
+                processed_volume DECIMAL(15,2),
+                rejected_volume DECIMAL(15,2),
+                audited_volume DECIMAL(15,2),
+                contract_limit DECIMAL(15,2),
+                subsidized_volume DECIMAL(15,2),
+                cpaf_rate DECIMAL(10,2),
+                cpaf_payable DECIMAL(15,2),
+                source_county VARCHAR(100),
+                osh_act_compliance BOOLEAN DEFAULT 0,
+                ppe_compliance BOOLEAN DEFAULT 0,
+                environmental_audits BOOLEAN DEFAULT 0,
+                additional_notes TEXT,
+                pakpro_ceo_signature TEXT,
+                recycler_signature TEXT,
+                auditor_signature TEXT,
+                completion_percentage INTEGER DEFAULT 0,
+                created_by INTEGER,
+                created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+                updated_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+                FOREIGN KEY (created_by) REFERENCES users(id)
+            )`
+        ];
+
+        for (const sql of tables) {
+            await this.run(sql);
+        }
+    }
+
+    async seedDefaultData() {
+        // Check if users exist
+        const userCount = await this.get('SELECT COUNT(*) as count FROM users');
+        
+        if (userCount.count === 0) {
+            console.log('🌱 Seeding default users for Kenya...');
+            
+            const defaultUsers = [
+                {
+                    username: 'admin',
+                    email: 'admin@pakpro.co.ke',
+                    password: 'pakpro123',
+                    role: 'data_analyst',
+                    full_name: 'System Administrator',
+                    county: 'Nairobi County'
+                },
+                {
+                    username: 'analyst1',
+                    email: 'analyst1@pakpro.co.ke',
+                    password: 'analyst123',
+                    role: 'data_analyst',
+                    full_name: 'Senior Data Analyst',
+                    county: 'Nairobi County'
+                }
+            ];
+
+            for (const user of defaultUsers) {
+                const hashedPassword = await bcrypt.hash(user.password, 12);
+                await this.run(`
+                    INSERT INTO users (username, email, password_hash, role, full_name, county)
+                    VALUES (?, ?, ?, ?, ?, ?)
+                `, [user.username, user.email, hashedPassword, user.role, user.full_name, user.county]);
+            }
+        }
+
+        // Seed demo audit data for Kenya
+        const auditCount = await this.get('SELECT COUNT(*) as count FROM audits');
+        
+        if (auditCount.count === 0) {
+            console.log('🌱 Seeding demo audit data for Kenya...');
+            
+            const demoAudits = [
+                {
+                    entity_name: 'Eco Post Kenya Limited',
+                    contract_ref: 'CT-KE-2024-001',
+                    status: 'finalized',
+                    procurement_location: 'Nairobi County',
+                    processing_location: 'Nairobi County',
+                    project_title: 'Plastic Waste Recycling Initiative Phase 1',
+                    purchased_volume: 1000.50,
+                    processed_volume: 950.25,
+                    rejected_volume: 50.25,
+                    audited_volume: 900.00,
+                    contract_limit: 750000.00,
+                    subsidized_volume: 800.00,
+                    cpaf_rate: 150.00,
+                    cpaf_payable: 120000.00,
+                    source_county: 'Nairobi County',
+                    osh_act_compliance: 1,
+                    ppe_compliance: 1,
+                    environmental_audits: 1,
+                    completion_percentage: 100,
+                    created_by: 1
+                },
+                {
+                    entity_name: 'Green Cycle Industries Kenya Ltd',
+                    contract_ref: 'CT-KE-2024-002',
+                    status: 'pending',
+                    procurement_location: 'Mombasa County',
+                    processing_location: 'Mombasa County',
+                    project_title: 'Coastal Plastic Recovery Project',
+                    purchased_volume: 750.75,
+                    processed_volume: 720.50,
+                    rejected_volume: 30.25,
+                    audited_volume: 690.25,
+                    contract_limit: 525000.00,
+                    subsidized_volume: 600.00,
+                    cpaf_rate: 140.00,
+                    cpaf_payable: 84000.00,
+                    source_county: 'Mombasa County',
+                    osh_act_compliance: 1,
+                    ppe_compliance: 0,
+                    environmental_audits: 1,
+                    completion_percentage: 75,
+                    created_by: 2
+                },
+                {
+                    entity_name: 'Nakuru Waste Management Solutions',
+                    contract_ref: 'CT-KE-2024-003',
+                    status: 'draft',
+                    procurement_location: 'Nakuru County',
+                    processing_location: 'Nakuru County',
+                    project_title: 'Rift Valley Recycling Hub',
+                    purchased_volume: 1200.00,
+                    processed_volume: 1150.75,
+                    rejected_volume: 25.00,
+                    audited_volume: 1125.75,
+                    contract_limit: 900000.00,
+                    subsidized_volume: 1000.00,
+                    cpaf_rate: 160.00,
+                    cpaf_payable: 160000.00,
+                    source_county: 'Nakuru County',
+                    osh_act_compliance: 0,
+                    ppe_compliance: 1,
+                    environmental_audits: 0,
+                    completion_percentage: 45,
+                    created_by: 1
+                }
+            ];
+
+            for (const audit of demoAudits) {
+                await this.run(`
+                    INSERT INTO audits (
+                        entity_name, contract_ref, status, procurement_location, processing_location,
+                        project_title, purchased_volume, processed_volume, rejected_volume, audited_volume,
+                        contract_limit, subsidized_volume, cpaf_rate, cpaf_payable, source_county,
+                        osh_act_compliance, ppe_compliance, environmental_audits, completion_percentage, created_by
+                    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                `, [
+                    audit.entity_name, audit.contract_ref, audit.status, audit.procurement_location,
+                    audit.processing_location, audit.project_title, audit.purchased_volume,
+                    audit.processed_volume, audit.rejected_volume, audit.audited_volume,
+                    audit.contract_limit, audit.subsidized_volume, audit.cpaf_rate,
+                    audit.cpaf_payable, audit.source_county, audit.osh_act_compliance,
+                    audit.ppe_compliance, audit.environmental_audits, audit.completion_percentage, audit.created_by
+                ]);
+            }
+        }
+    }
+
+    // Database operation helpers
+    async run(sql, params = []) {
+        return new Promise((resolve, reject) => {
+            this.db.run(sql, params, function(err) {
+                if (err) {
+                    reject(err);
+                } else {
+                    resolve({ id: this.lastID, changes: this.changes });
+                }
+            });
+        });
+    }
+
+    async get(sql, params = []) {
+        return new Promise((resolve, reject) => {
+            this.db.get(sql, params, (err, row) => {
+                if (err) reject(err);
+                else resolve(row);
+            });
+        });
+    }
+
+    async all(sql, params = []) {
+        return new Promise((resolve, reject) => {
+            this.db.all(sql, params, (err, rows) => {
+                if (err) reject(err);
+                else resolve(rows);
+            });
+        });
+    }
+}
+
+// ========================================
+// MIDDLEWARE
+// ========================================
+function authenticateToken(req, res, next) {
+    const authHeader = req.headers['authorization'];
+    const token = authHeader && authHeader.split(' ')[1];
+
+    if (!token) {
+        return res.status(401).json({ success: false, message: 'Access token required' });
+    }
+
+    jwt.verify(token, CONFIG.JWT_SECRET, (err, user) => {
+        if (err) {
+            return res.status(403).json({ success: false, message: 'Invalid token' });
+        }
+        req.user = user;
+        next();
+    });
+}
 
 // Rate limiting
 const limiter = rateLimit({
-  windowMs: 15 * 60 * 1000,
-  max: 200
-});
-app.use('/api/', limiter);
-
-// Data management functions
-async function ensureDataDirectory() {
-  try {
-    await fs.access(DATA_DIR);
-  } catch {
-    await fs.mkdir(DATA_DIR, { recursive: true });
-  }
-}
-
-async function readJsonFile(filePath, defaultData = []) {
-  try {
-    const data = await fs.readFile(filePath, 'utf8');
-    return JSON.parse(data);
-  } catch {
-    return defaultData;
-  }
-}
-
-async function writeJsonFile(filePath, data) {
-  await fs.writeFile(filePath, JSON.stringify(data, null, 2));
-}
-
-// Initialize database
-async function initializeDatabase() {
-  try {
-    await ensureDataDirectory();
-    
-    // Initialize users
-    const users = await readJsonFile(USERS_FILE, []);
-    if (users.length === 0) {
-      await createDefaultUsers();
-    }
-    
-    // Initialize other files
-    await readJsonFile(AUDITS_FILE, []);
-    await readJsonFile(ACTIVITIES_FILE, []);
-    await readJsonFile(NOTIFICATIONS_FILE, []);
-    
-    console.log('Database initialized with JSON files');
-  } catch (error) {
-    console.error('Error initializing database:', error);
-  }
-}
-
-// Create default users
-async function createDefaultUsers() {
-  const defaultUsers = [
-    {
-      id: 1,
-      username: 'admin',
-      email: 'admin@pakpro.com',
-      password: 'pakpro123',
-      role: 'data_analyst',
-      fullName: 'System Administrator',
-      department: 'Data Analysis',
-      isActive: true,
-      createdAt: new Date().toISOString()
-    },
-    {
-      id: 2,
-      username: 'analyst1',
-      email: 'analyst1@pakpro.com',
-      password: 'analyst123',
-      role: 'data_analyst',
-      fullName: 'Data Analyst 1',
-      department: 'Data Analysis',
-      isActive: true,
-      createdAt: new Date().toISOString()
-    },
-    {
-      id: 3,
-      username: 'auditor1',
-      email: 'auditor1@pakpro.com',
-      password: 'auditor123',
-      role: 'field_auditor',
-      fullName: 'Field Auditor 1',
-      department: 'Field Operations',
-      isActive: true,
-      createdAt: new Date().toISOString()
-    }
-  ];
-
-  for (const user of defaultUsers) {
-    user.passwordHash = await bcrypt.hash(user.password, 10);
-    delete user.password;
-  }
-
-  await writeJsonFile(USERS_FILE, defaultUsers);
-  console.log('Default users created:');
-  console.log('  Data Analyst: admin / pakpro123');
-  console.log('  Data Analyst: analyst1 / analyst123');
-  console.log('  Field Auditor: auditor1 / auditor123');
-}
-
-// JWT middleware
-function authenticateToken(req, res, next) {
-  const authHeader = req.headers['authorization'];
-  const token = authHeader && authHeader.split(' ')[1];
-
-  if (!token) {
-    return res.status(401).json({ error: 'Access token required' });
-  }
-
-  jwt.verify(token, JWT_SECRET, async (err, user) => {
-    if (err) {
-      return res.status(403).json({ error: 'Invalid token' });
-    }
-    
-    // Update last login
-    try {
-      const users = await readJsonFile(USERS_FILE, []);
-      const userIndex = users.findIndex(u => u.id === user.userId);
-      if (userIndex >= 0) {
-        users[userIndex].lastLogin = new Date().toISOString();
-        await writeJsonFile(USERS_FILE, users);
-      }
-    } catch (error) {
-      console.error('Error updating last login:', error);
-    }
-    
-    req.user = user;
-    next();
-  });
-}
-
-// Role-based access control
-function requireRole(roles) {
-  return (req, res, next) => {
-    if (!roles.includes(req.user.role)) {
-      return res.status(403).json({ error: 'Insufficient permissions' });
-    }
-    next();
-  };
-}
-
-// Activity logging
-async function logActivity(auditId, userId, activityType, description, oldStatus = null, newStatus = null) {
-  try {
-    const activities = await readJsonFile(ACTIVITIES_FILE, []);
-    const newActivity = {
-      id: Date.now(),
-      auditId,
-      userId,
-      activityType,
-      description,
-      oldStatus,
-      newStatus,
-      createdAt: new Date().toISOString()
-    };
-    activities.push(newActivity);
-    await writeJsonFile(ACTIVITIES_FILE, activities);
-  } catch (error) {
-    console.error('Error logging activity:', error);
-  }
-}
-
-// Notification function
-async function createNotification(userId, auditId, type, title, message) {
-  try {
-    const notifications = await readJsonFile(NOTIFICATIONS_FILE, []);
-    const newNotification = {
-      id: Date.now(),
-      userId,
-      auditId,
-      type,
-      title,
-      message,
-      isRead: false,
-      createdAt: new Date().toISOString()
-    };
-    notifications.push(newNotification);
-    await writeJsonFile(NOTIFICATIONS_FILE, notifications);
-  } catch (error) {
-    console.error('Error creating notification:', error);
-  }
-}
-
-// Routes
-
-// Health check
-app.get('/api/health', (req, res) => {
-  res.json({ 
-    status: 'OK', 
-    message: 'PAKPRO Audit API is running',
-    timestamp: new Date().toISOString()
-  });
+    windowMs: 15 * 60 * 1000, // 15 minutes
+    max: 1000 // limit each IP to 1000 requests per windowMs
 });
 
-// User login
-app.post('/api/login', async (req, res) => {
-  const { username, password } = req.body;
-
-  if (!username || !password) {
-    return res.status(400).json({ error: 'Username and password are required' });
-  }
-
-  try {
-    const users = await readJsonFile(USERS_FILE, []);
-    const user = users.find(u => u.username === username && u.isActive);
-
-    if (!user) {
-      return res.status(401).json({ error: 'Invalid credentials or account disabled' });
-    }
-
-    const validPassword = await bcrypt.compare(password, user.passwordHash);
-    if (!validPassword) {
-      return res.status(401).json({ error: 'Invalid credentials' });
-    }
-
-    const token = jwt.sign(
-      { userId: user.id, username: user.username, role: user.role },
-      JWT_SECRET,
-      { expiresIn: '24h' }
-    );
-
-    res.json({
-      message: 'Login successful',
-      token,
-      user: {
-        id: user.id,
-        username: user.username,
-        email: user.email,
-        role: user.role,
-        fullName: user.fullName,
-        department: user.department
-      }
-    });
-  } catch (error) {
-    console.error('Login error:', error);
-    res.status(500).json({ error: 'Server error' });
-  }
+const authLimiter = rateLimit({
+    windowMs: 15 * 60 * 1000, // 15 minutes
+    max: 5 // limit each IP to 5 requests per windowMs
 });
 
-// Create new user
-app.post('/api/users/create', authenticateToken, requireRole(['data_analyst']), async (req, res) => {
-  try {
-    const { username, email, password, role, fullName, department, phone } = req.body;
+// ========================================
+// EXPRESS APP SETUP
+// ========================================
+const app = express();
+const db = new Database();
 
-    if (!username || !email || !password) {
-      return res.status(400).json({ error: 'Username, email, and password are required' });
-    }
-
-    if (!['field_auditor', 'data_analyst'].includes(role)) {
-      return res.status(400).json({ error: 'Invalid role specified' });
-    }
-
-    const users = await readJsonFile(USERS_FILE, []);
-    
-    // Check for existing username or email
-    if (users.find(u => u.username === username || u.email === email)) {
-      return res.status(400).json({ error: 'Username or email already exists' });
-    }
-
-    const hashedPassword = await bcrypt.hash(password, 10);
-    const newUser = {
-      id: Math.max(...users.map(u => u.id), 0) + 1,
-      username,
-      email,
-      passwordHash: hashedPassword,
-      role,
-      fullName,
-      department,
-      phone,
-      isActive: true,
-      createdAt: new Date().toISOString()
-    };
-
-    users.push(newUser);
-    await writeJsonFile(USERS_FILE, users);
-
-    res.status(201).json({ 
-      message: 'User created successfully',
-      userId: newUser.id
-    });
-  } catch (error) {
-    console.error('User creation error:', error);
-    res.status(500).json({ error: 'Server error' });
-  }
-});
-
-// Get dashboard statistics
-app.get('/api/dashboard/stats', authenticateToken, async (req, res) => {
-  try {
-    const audits = await readJsonFile(AUDITS_FILE, []);
-    const stats = {};
-
-    if (req.user.role === 'data_analyst') {
-      // Analyst dashboard
-      stats.totalAudits = audits.length;
-      stats.pendingReview = audits.filter(a => a.status === 'pending_review').length;
-      stats.inProgress = audits.filter(a => ['draft', 'in_progress'].includes(a.status)).length;
-      stats.completed = audits.filter(a => a.status === 'finalized').length;
-      
-      // Recent activity
-      const activities = await readJsonFile(ACTIVITIES_FILE, []);
-      const users = await readJsonFile(USERS_FILE, []);
-      
-      const recentActivity = activities
-        .sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt))
-        .slice(0, 10)
-        .map(activity => {
-          const user = users.find(u => u.id === activity.userId);
-          return {
-            ...activity,
-            userName: user ? user.fullName : 'Unknown User'
-          };
-        });
-      
-      stats.recentActivity = recentActivity;
-      
-    } else {
-      // Field auditor dashboard
-      const myAudits = audits.filter(a => a.createdBy === req.user.userId);
-      stats.myAudits = myAudits.length;
-      stats.myDrafts = myAudits.filter(a => a.status === 'draft').length;
-      stats.mySubmitted = myAudits.filter(a => ['pending_review', 'in_review'].includes(a.status)).length;
-      stats.myCompleted = myAudits.filter(a => a.status === 'finalized').length;
-    }
-
-    res.json(stats);
-  } catch (error) {
-    console.error('Dashboard stats error:', error);
-    res.status(500).json({ error: 'Failed to fetch dashboard statistics' });
-  }
-});
-
-// Create or update audit
-app.post('/api/audits', authenticateToken, async (req, res) => {
-  try {
-    const { id, status, generalInfo, validation, conclusions, analystNotes, assignedAnalyst } = req.body;
-    const auditId = id || `AUDIT-${Date.now()}`;
-    const userId = req.user.userId;
-
-    const audits = await readJsonFile(AUDITS_FILE, []);
-    const existingAuditIndex = audits.findIndex(a => a.id === auditId);
-
-    const entityName = generalInfo?.entityName || '';
-    const contractRef = generalInfo?.contractRef || '';
-    const location = generalInfo?.entityAddress || '';
-
-    // Calculate completion percentage
-    const fields = [
-      generalInfo?.entityName,
-      generalInfo?.contractRef,
-      validation?.spotChecks,
-      conclusions?.assessmentStatus
-    ];
-    const completedFields = fields.filter(field => field && field.trim()).length;
-    const completionPercentage = Math.round((completedFields / fields.length) * 100);
-
-    const auditData = {
-      id: auditId,
-      status: status || 'draft',
-      entityName,
-      contractRef,
-      location,
-      generalInfo: generalInfo || {},
-      validation: validation || {},
-      conclusions: conclusions || {},
-      analystNotes,
-      assignedAnalyst,
-      completionPercentage,
-      updatedAt: new Date().toISOString()
-    };
-
-    if (existingAuditIndex >= 0) {
-      // Update existing audit
-      const existingAudit = audits[existingAuditIndex];
-      auditData.createdBy = existingAudit.createdBy;
-      auditData.createdAt = existingAudit.createdAt;
-      
-      // Update timestamps based on status changes
-      if (status === 'pending_review' && existingAudit.status !== 'pending_review') {
-        auditData.submittedAt = new Date().toISOString();
-      }
-      if (status === 'in_review' && existingAudit.status !== 'in_review') {
-        auditData.reviewedAt = new Date().toISOString();
-      }
-      if (status === 'finalized' && existingAudit.status !== 'finalized') {
-        auditData.finalizedAt = new Date().toISOString();
-      }
-
-      audits[existingAuditIndex] = auditData;
-
-      // Log status change
-      if (existingAudit.status !== status) {
-        await logActivity(auditId, userId, 'status_change', 
-                         `Status changed from ${existingAudit.status} to ${status}`, 
-                         existingAudit.status, status);
-
-        // Create notifications for status changes
-        if (status === 'pending_review' && req.user.role === 'field_auditor') {
-          const users = await readJsonFile(USERS_FILE, []);
-          const analysts = users.filter(u => u.role === 'data_analyst' && u.isActive);
-          
-          for (const analyst of analysts) {
-            await createNotification(analyst.id, auditId, 'audit_submitted', 
-                                   'New Audit for Review', 
-                                   `Audit ${auditId} has been submitted for review by ${req.user.username}`);
-          }
+// Security middleware
+app.use(helmet({
+    contentSecurityPolicy: {
+        directives: {
+            defaultSrc: ["'self'"],
+            styleSrc: ["'self'", "'unsafe-inline'", "https://cdnjs.cloudflare.com"],
+            scriptSrc: ["'self'", "'unsafe-inline'", "https://cdnjs.cloudflare.com"],
+            scriptSrcAttr: ["'unsafe-inline'"],
+            imgSrc: ["'self'", "data:", "https:", "blob:"],
+            fontSrc: ["'self'", "https://cdnjs.cloudflare.com"],
+            connectSrc: ["'self'"]
         }
-      }
-
-      res.json({
-        message: 'Audit updated successfully',
-        audit: { id: auditId, action: 'updated' }
-      });
-    } else {
-      // Create new audit
-      auditData.createdBy = userId;
-      auditData.createdAt = new Date().toISOString();
-      audits.push(auditData);
-
-      await logActivity(auditId, userId, 'created', 'Audit created');
-
-      res.status(201).json({
-        message: 'Audit created successfully',
-        audit: { id: auditId, action: 'created' }
-      });
     }
+}));
 
-    await writeJsonFile(AUDITS_FILE, audits);
-  } catch (error) {
-    console.error('Error saving audit:', error);
-    res.status(500).json({ error: 'Failed to save audit' });
-  }
+app.use(cors());
+app.use(compression());
+app.use(express.json({ limit: '10mb' }));
+app.use(express.urlencoded({ extended: true }));
+app.use(limiter);
+
+// Serve static files from public directory
+app.use(express.static(path.join(__dirname, 'public')));
+
+// ========================================
+// AUTH ROUTES
+// ========================================
+app.post('/api/v1/auth/login', authLimiter, async (req, res) => {
+    try {
+        const { username, password } = req.body;
+
+        if (!username || !password) {
+            return res.status(400).json({
+                success: false,
+                message: 'Username and password required'
+            });
+        }
+
+        const user = await db.get(`
+            SELECT * FROM users 
+            WHERE username = ? OR email = ?
+        `, [username, username]);
+
+        if (!user) {
+            return res.status(401).json({
+                success: false,
+                message: 'Invalid credentials'
+            });
+        }
+
+        const isValidPassword = await bcrypt.compare(password, user.password_hash);
+
+        if (!isValidPassword) {
+            return res.status(401).json({
+                success: false,
+                message: 'Invalid credentials'
+            });
+        }
+
+        const token = jwt.sign(
+            { 
+                userId: user.id, 
+                username: user.username, 
+                role: user.role,
+                county: user.county
+            },
+            CONFIG.JWT_SECRET,
+            { expiresIn: CONFIG.JWT_EXPIRES_IN }
+        );
+
+        res.json({
+            success: true,
+            message: 'Login successful',
+            token,
+            user: {
+                id: user.id,
+                username: user.username,
+                email: user.email,
+                role: user.role,
+                full_name: user.full_name,
+                county: user.county
+            }
+        });
+
+    } catch (error) {
+        console.error('Login error:', error);
+        res.status(500).json({
+            success: false,
+            message: 'Internal server error'
+        });
+    }
 });
 
-// Get audits with role-based filtering
-app.get('/api/audits', authenticateToken, async (req, res) => {
-  try {
-    const { status, search, assigned_to_me, created_by_me } = req.query;
-    
-    let audits = await readJsonFile(AUDITS_FILE, []);
-    const users = await readJsonFile(USERS_FILE, []);
+// ========================================
+// AUDIT ROUTES
+// ========================================
+app.get('/api/v1/audits', authenticateToken, async (req, res) => {
+    try {
+        const { status, entityName, county, page = 1, limit = 50 } = req.query;
 
-    // Role-based filtering
-    if (req.user.role === 'field_auditor' && !created_by_me) {
-      audits = audits.filter(a => a.createdBy === req.user.userId);
+        let whereClause = '1=1';
+        const params = [];
+
+        if (status) {
+            whereClause += ' AND status = ?';
+            params.push(status);
+        }
+
+        if (entityName) {
+            whereClause += ' AND entity_name LIKE ?';
+            params.push(`%${entityName}%`);
+        }
+
+        if (county) {
+            whereClause += ' AND source_county = ?';
+            params.push(county);
+        }
+
+        const offset = (page - 1) * limit;
+
+        const audits = await db.all(`
+            SELECT 
+                a.*,
+                u.full_name as created_by_name
+            FROM audits a
+            LEFT JOIN users u ON a.created_by = u.id
+            WHERE ${whereClause}
+            ORDER BY a.created_at DESC
+            LIMIT ? OFFSET ?
+        `, [...params, limit, offset]);
+
+        const totalResult = await db.get(`
+            SELECT COUNT(*) as total 
+            FROM audits 
+            WHERE ${whereClause}
+        `, params);
+
+        res.json({
+            success: true,
+            data: audits,
+            pagination: {
+                page: parseInt(page),
+                limit: parseInt(limit),
+                total: totalResult.total,
+                pages: Math.ceil(totalResult.total / limit)
+            }
+        });
+
+    } catch (error) {
+        console.error('Error fetching audits:', error);
+        res.status(500).json({
+            success: false,
+            message: 'Failed to fetch audits'
+        });
     }
-
-    // Apply filters
-    if (status) {
-      audits = audits.filter(a => a.status === status);
-    }
-
-    if (search) {
-      const searchLower = search.toLowerCase();
-      audits = audits.filter(a => 
-        (a.entityName && a.entityName.toLowerCase().includes(searchLower)) ||
-        (a.contractRef && a.contractRef.toLowerCase().includes(searchLower)) ||
-        (a.id && a.id.toLowerCase().includes(searchLower))
-      );
-    }
-
-    if (assigned_to_me === 'true') {
-      audits = audits.filter(a => a.assignedAnalyst === req.user.userId);
-    }
-
-    // Add user information
-    const enrichedAudits = audits.map(audit => {
-      const creator = users.find(u => u.id === audit.createdBy);
-      const analyst = users.find(u => u.id === audit.assignedAnalyst);
-      
-      return {
-        ...audit,
-        createdBy: creator ? creator.username : 'Unknown',
-        createdByName: creator ? creator.fullName : 'Unknown',
-        assignedAnalyst: analyst ? analyst.username : null,
-        assignedAnalystName: analyst ? analyst.fullName : null
-      };
-    });
-
-    // Sort by updated date (newest first)
-    enrichedAudits.sort((a, b) => new Date(b.updatedAt) - new Date(a.updatedAt));
-
-    res.json({ audits: enrichedAudits });
-  } catch (error) {
-    console.error('Error fetching audits:', error);
-    res.status(500).json({ error: 'Failed to fetch audits' });
-  }
 });
 
-// Get single audit
-app.get('/api/audits/:id', authenticateToken, async (req, res) => {
-  try {
-    const auditId = req.params.id;
-    const audits = await readJsonFile(AUDITS_FILE, []);
-    const users = await readJsonFile(USERS_FILE, []);
-    
-    const audit = audits.find(a => a.id === auditId);
-    if (!audit) {
-      return res.status(404).json({ error: 'Audit not found' });
+app.post('/api/v1/audits', authenticateToken, async (req, res) => {
+    try {
+        const auditData = req.body;
+        
+        // Calculate completion percentage
+        const completion = calculateCompletionPercentage(auditData);
+        
+        const result = await db.run(`
+            INSERT INTO audits (
+                entity_name, contract_ref, status, procurement_location, processing_location,
+                verification_period_start, verification_period_end, project_title, auditee_team_leader,
+                auditee_team_members, purchased_volume, processed_volume, rejected_volume,
+                audited_volume, contract_limit, subsidized_volume, cpaf_rate, cpaf_payable,
+                source_county, osh_act_compliance, ppe_compliance, environmental_audits,
+                additional_notes, pakpro_ceo_signature, recycler_signature, auditor_signature,
+                completion_percentage, created_by
+            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+        `, [
+            auditData.entityName, auditData.contractRef, auditData.status || 'draft',
+            auditData.procurementLocation, auditData.processingLocation,
+            auditData.verificationPeriodStart, auditData.verificationPeriodEnd,
+            auditData.projectTitle, auditData.auditeeTeamLeader, auditData.auditeeTeamMembers,
+            auditData.purchasedVolume, auditData.processedVolume, auditData.rejectedVolume,
+            auditData.auditedVolume, auditData.contractLimit, auditData.subsidizedVolume,
+            auditData.cpafRate, auditData.cpafPayable, auditData.sourceCounty,
+            auditData.oshActCompliance ? 1 : 0, auditData.ppeCompliance ? 1 : 0,
+            auditData.environmentalAudits ? 1 : 0, auditData.additionalNotes,
+            auditData.pakproCeoSignature, auditData.recyclerSignature, auditData.auditorSignature,
+            completion, req.user.userId
+        ]);
+
+        const newAudit = await db.get('SELECT * FROM audits WHERE id = ?', [result.id]);
+
+        res.status(201).json({
+            success: true,
+            message: 'Audit created successfully',
+            data: newAudit
+        });
+
+    } catch (error) {
+        console.error('Error creating audit:', error);
+        res.status(500).json({
+            success: false,
+            message: 'Failed to create audit'
+        });
     }
+});
 
-    const creator = users.find(u => u.id === audit.createdBy);
-    const analyst = users.find(u => u.id === audit.assignedAnalyst);
+app.put('/api/v1/audits/:id', authenticateToken, async (req, res) => {
+    try {
+        const auditId = req.params.id;
+        const auditData = req.body;
 
-    const enrichedAudit = {
-      ...audit,
-      createdBy: creator ? creator.username : 'Unknown',
-      createdByName: creator ? creator.fullName : 'Unknown',
-      assignedAnalyst: analyst ? analyst.username : null,
-      assignedAnalystName: analyst ? analyst.fullName : null
+        // Check if audit exists
+        const existingAudit = await db.get('SELECT * FROM audits WHERE id = ?', [auditId]);
+        
+        if (!existingAudit) {
+            return res.status(404).json({
+                success: false,
+                message: 'Audit not found'
+            });
+        }
+
+        const completion = calculateCompletionPercentage(auditData);
+
+        await db.run(`
+            UPDATE audits 
+            SET entity_name = ?, contract_ref = ?, status = ?, procurement_location = ?,
+                processing_location = ?, project_title = ?, purchased_volume = ?,
+                processed_volume = ?, rejected_volume = ?, audited_volume = ?,
+                contract_limit = ?, subsidized_volume = ?, cpaf_rate = ?, cpaf_payable = ?,
+                source_county = ?, additional_notes = ?, completion_percentage = ?,
+                updated_at = CURRENT_TIMESTAMP
+            WHERE id = ?
+        `, [
+            auditData.entityName, auditData.contractRef, auditData.status,
+            auditData.procurementLocation, auditData.processingLocation,
+            auditData.projectTitle, auditData.purchasedVolume, auditData.processedVolume,
+            auditData.rejectedVolume, auditData.auditedVolume, auditData.contractLimit,
+            auditData.subsidizedVolume, auditData.cpafRate, auditData.cpafPayable,
+            auditData.sourceCounty, auditData.additionalNotes, completion, auditId
+        ]);
+
+        const updatedAudit = await db.get('SELECT * FROM audits WHERE id = ?', [auditId]);
+
+        res.json({
+            success: true,
+            message: 'Audit updated successfully',
+            data: updatedAudit
+        });
+
+    } catch (error) {
+        console.error('Error updating audit:', error);
+        res.status(500).json({
+            success: false,
+            message: 'Failed to update audit'
+        });
+    }
+});
+
+app.delete('/api/v1/audits/:id', authenticateToken, async (req, res) => {
+    try {
+        const auditId = req.params.id;
+
+        const audit = await db.get('SELECT * FROM audits WHERE id = ?', [auditId]);
+        
+        if (!audit) {
+            return res.status(404).json({
+                success: false,
+                message: 'Audit not found'
+            });
+        }
+
+        await db.run('DELETE FROM audits WHERE id = ?', [auditId]);
+
+        res.json({
+            success: true,
+            message: 'Audit deleted successfully'
+        });
+
+    } catch (error) {
+        console.error('Error deleting audit:', error);
+        res.status(500).json({
+            success: false,
+            message: 'Failed to delete audit'
+        });
+    }
+});
+
+// Get specific audit
+app.get('/api/v1/audits/:id', authenticateToken, async (req, res) => {
+    try {
+        const auditId = req.params.id;
+
+        const audit = await db.get(`
+            SELECT 
+                a.*,
+                u.full_name as created_by_name
+            FROM audits a
+            LEFT JOIN users u ON a.created_by = u.id
+            WHERE a.id = ?
+        `, [auditId]);
+
+        if (!audit) {
+            return res.status(404).json({
+                success: false,
+                message: 'Audit not found'
+            });
+        }
+
+        res.json({
+            success: true,
+            data: audit
+        });
+
+    } catch (error) {
+        console.error('Error fetching audit:', error);
+        res.status(500).json({
+            success: false,
+            message: 'Failed to fetch audit'
+        });
+    }
+});
+
+// ========================================
+// ANALYTICS ROUTES
+// ========================================
+app.get('/api/v1/analytics/dashboard', authenticateToken, async (req, res) => {
+    try {
+        const stats = await calculateDashboardStats();
+        
+        res.json({
+            success: true,
+            data: stats,
+            currency: CONFIG.CURRENCY,
+            country: CONFIG.COUNTRY
+        });
+
+    } catch (error) {
+        console.error('Error fetching dashboard analytics:', error);
+        res.status(500).json({
+            success: false,
+            message: 'Failed to fetch dashboard analytics'
+        });
+    }
+});
+
+async function calculateDashboardStats() {
+    const totalAudits = await db.get('SELECT COUNT(*) as count FROM audits');
+    const finalizedAudits = await db.get('SELECT COUNT(*) as count FROM audits WHERE status = "finalized"');
+    const pendingAudits = await db.get('SELECT COUNT(*) as count FROM audits WHERE status = "pending"');
+    const draftAudits = await db.get('SELECT COUNT(*) as count FROM audits WHERE status = "draft"');
+    
+    const volumeStats = await db.get(`
+        SELECT 
+            SUM(purchased_volume) as total_purchased,
+            SUM(processed_volume) as total_processed,
+            SUM(rejected_volume) as total_rejected,
+            SUM(subsidized_volume) as total_subsidized,
+            SUM(cpaf_payable) as total_cpaf_payable,
+            AVG(completion_percentage) as avg_completion
+        FROM audits
+    `);
+
+    return {
+        totalAudits: totalAudits.count,
+        finalizedAudits: finalizedAudits.count,
+        pendingAudits: pendingAudits.count,
+        draftAudits: draftAudits.count,
+        totalRejectedVolume: volumeStats.total_rejected || 0,
+        totalCPAFPayable: volumeStats.total_cpaf_payable || 0,
+        totalSubsidizedVolume: volumeStats.total_subsidized || 0,
+        avgCompletion: Math.round(volumeStats.avg_completion || 0)
     };
+}
 
-    res.json({ audit: enrichedAudit });
-  } catch (error) {
-    console.error('Error fetching audit:', error);
-    res.status(500).json({ error: 'Failed to fetch audit' });
-  }
-});
-
-// Delete audit
-app.delete('/api/audits/:id', authenticateToken, async (req, res) => {
-  try {
-    const auditId = req.params.id;
-    const audits = await readJsonFile(AUDITS_FILE, []);
-    
-    const auditIndex = audits.findIndex(a => a.id === auditId);
-    if (auditIndex === -1) {
-      return res.status(404).json({ error: 'Audit not found' });
-    }
-
-    const audit = audits[auditIndex];
-    
-    // Check permissions
-    if (audit.createdBy !== req.user.userId && req.user.role !== 'data_analyst') {
-      return res.status(403).json({ error: 'Access denied' });
-    }
-
-    audits.splice(auditIndex, 1);
-    await writeJsonFile(AUDITS_FILE, audits);
-
-    res.json({ message: 'Audit deleted successfully' });
-  } catch (error) {
-    console.error('Error deleting audit:', error);
-    res.status(500).json({ error: 'Failed to delete audit' });
-  }
-});
-
-// Export audits to Excel
-app.get('/api/audits/export', authenticateToken, requireRole(['data_analyst']), async (req, res) => {
-  try {
-    const audits = await readJsonFile(AUDITS_FILE, []);
-    const users = await readJsonFile(USERS_FILE, []);
-
-    if (audits.length === 0) {
-      return res.status(404).json({ error: 'No audits found to export' });
-    }
-
-    // Prepare Excel data
-    const excelData = audits.map(audit => {
-      const creator = users.find(u => u.id === audit.createdBy);
-      const analyst = users.find(u => u.id === audit.assignedAnalyst);
-
-      return {
-        'Audit ID': audit.id,
-        'Status': audit.status,
-        'Completion %': audit.completionPercentage || 0,
-        'Entity Name': audit.entityName,
-        'Contract Reference': audit.contractRef,
-        'Location': audit.location,
-        'Created By': creator ? creator.fullName : 'Unknown',
-        'Assigned Analyst': analyst ? analyst.fullName : 'Unassigned',
-        'Created Date': new Date(audit.createdAt).toLocaleDateString(),
-        'Updated Date': new Date(audit.updatedAt).toLocaleDateString(),
-        'Submitted Date': audit.submittedAt ? new Date(audit.submittedAt).toLocaleDateString() : '',
-        
-        // General Information
-        'Entity Address': audit.generalInfo?.entityAddress || '',
-        'Verification Period': audit.generalInfo?.verificationPeriod || '',
-        'Project Title': audit.generalInfo?.projectTitle || '',
-        'Auditee Team Leader': audit.generalInfo?.auditeeTeamLeader || '',
-        'Start Date': audit.generalInfo?.startDate || '',
-        'On-site Date': audit.generalInfo?.onSiteDate || '',
-        
-        // Validation
-        'Spot Checks Conducted': audit.validation?.spotChecks || '',
-        'Rejected Material': audit.validation?.rejectedMaterial || '',
-        'Rejection Details': audit.validation?.rejectionDetails || '',
-        'Contract Amendments': audit.validation?.contractAmendments || '',
-        'Amendment Details': audit.validation?.amendmentDetails || '',
-        'Additional Comments': audit.validation?.additionalComments || '',
-        
-        // Conclusions
-        'Assessment Status': audit.conclusions?.assessmentStatus || '',
-        'Audit Team Leader': audit.conclusions?.auditTeamLeader || '',
-        'Audit Date': audit.conclusions?.auditDate || '',
-        'Conclusion Comments': audit.conclusions?.conclusionComments || '',
-        
-        // Analyst Notes
-        'Analyst Notes': audit.analystNotes || ''
-      };
+// Get Kenya counties
+app.get('/api/v1/counties', (req, res) => {
+    res.json({
+        success: true,
+        data: KENYAN_COUNTIES,
+        total: KENYAN_COUNTIES.length
     });
+});
 
-    // Create workbook
-    const workbook = XLSX.utils.book_new();
-    const worksheet = XLSX.utils.json_to_sheet(excelData);
-    
-    // Auto-size columns
-    const colWidths = Object.keys(excelData[0] || {}).map(key => ({ wch: Math.max(key.length, 15) }));
-    worksheet['!cols'] = colWidths;
-    
-    XLSX.utils.book_append_sheet(workbook, worksheet, 'Audit Data');
-
-    // Summary sheet
-    const summaryData = [
-      ['PAKPRO Audit Summary Report'],
-      ['Generated:', new Date().toLocaleString()],
-      [''],
-      ['Status Distribution'],
-      ['Draft', audits.filter(a => a.status === 'draft').length],
-      ['Pending Review', audits.filter(a => a.status === 'pending_review').length],
-      ['In Review', audits.filter(a => a.status === 'in_review').length],
-      ['Finalized', audits.filter(a => a.status === 'finalized').length],
-      [''],
-      ['Total Audits', audits.length]
+// ========================================
+// UTILITY FUNCTIONS
+// ========================================
+function calculateCompletionPercentage(auditData) {
+    const requiredFields = [
+        'entityName', 'contractRef', 'procurementLocation', 'processingLocation',
+        'projectTitle', 'purchasedVolume', 'processedVolume', 'auditedVolume',
+        'contractLimit', 'subsidizedVolume', 'cpafPayable', 'sourceCounty'
     ];
     
-    const summarySheet = XLSX.utils.aoa_to_sheet(summaryData);
-    summarySheet['!cols'] = [{ wch: 20 }, { wch: 15 }];
-    XLSX.utils.book_append_sheet(workbook, summarySheet, 'Summary');
-
-    const buffer = XLSX.write(workbook, { type: 'buffer', bookType: 'xlsx' });
-
-    res.setHeader('Content-Disposition', `attachment; filename=PAKPRO_Export_${new Date().toISOString().split('T')[0]}.xlsx`);
-    res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
-
-    res.send(buffer);
-  } catch (error) {
-    console.error('Export error:', error);
-    res.status(500).json({ error: 'Failed to export audits' });
-  }
-});
-
-// Export single audit
-app.get('/api/audits/:id/export', authenticateToken, async (req, res) => {
-  try {
-    const auditId = req.params.id;
-    const audits = await readJsonFile(AUDITS_FILE, []);
-    const users = await readJsonFile(USERS_FILE, []);
+    let completedFields = 0;
+    for (const field of requiredFields) {
+        if (auditData[field] && auditData[field].toString().trim() !== '') {
+            completedFields++;
+        }
+    }
     
-    const audit = audits.find(a => a.id === auditId);
-    if (!audit) {
-      return res.status(404).json({ error: 'Audit not found' });
-    }
+    return Math.round((completedFields / requiredFields.length) * 100);
+}
 
-    const creator = users.find(u => u.id === audit.createdBy);
-
-    // Create formatted audit report
-    const auditReport = [
-      ['PAKPRO DIGITAL VERIFICATION AUDIT REPORT'],
-      [''],
-      ['Audit ID:', audit.id],
-      ['Status:', audit.status],
-      ['Created By:', creator ? creator.fullName : 'Unknown'],
-      ['Created Date:', new Date(audit.createdAt).toLocaleDateString()],
-      [''],
-      ['GENERAL INFORMATION'],
-      ['Entity Name:', audit.entityName],
-      ['Contract Reference:', audit.contractRef],
-      ['Entity Address:', audit.generalInfo?.entityAddress || ''],
-      ['Verification Period:', audit.generalInfo?.verificationPeriod || ''],
-      ['Project Title:', audit.generalInfo?.projectTitle || ''],
-      ['Auditee Team Leader:', audit.generalInfo?.auditeeTeamLeader || ''],
-      ['Start Date:', audit.generalInfo?.startDate || ''],
-      ['On-site Assessment Date:', audit.generalInfo?.onSiteDate || ''],
-      [''],
-      ['VALIDATION AND VERIFICATION'],
-      ['Spot-checks conducted by PAKPRO:', audit.validation?.spotChecks || ''],
-      ['Rejected post-consumer material:', audit.validation?.rejectedMaterial || ''],
-      ['Rejection Details:', audit.validation?.rejectionDetails || ''],
-      ['Contract amendments to be captured:', audit.validation?.contractAmendments || ''],
-      ['Amendment Details:', audit.validation?.amendmentDetails || ''],
-      ['Additional Comments:', audit.validation?.additionalComments || ''],
-      [''],
-      ['CONCLUSIONS'],
-      ['Assessment Status:', audit.conclusions?.assessmentStatus || ''],
-      ['PAKPRO Audit Team Leader:', audit.conclusions?.auditTeamLeader || ''],
-      ['Audit Date:', audit.conclusions?.auditDate || ''],
-      ['Additional Comments:', audit.conclusions?.conclusionComments || '']
-    ];
-
-    const workbook = XLSX.utils.book_new();
-    const worksheet = XLSX.utils.aoa_to_sheet(auditReport);
-    worksheet['!cols'] = [{ wch: 30 }, { wch: 50 }];
-    XLSX.utils.book_append_sheet(workbook, worksheet, 'Audit Report');
-
-    const buffer = XLSX.write(workbook, { type: 'buffer', bookType: 'xlsx' });
-
-    res.setHeader('Content-Disposition', `attachment; filename=PAKPRO_Audit_${audit.id}.xlsx`);
-    res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
-
-    res.send(buffer);
-  } catch (error) {
-    console.error('Export error:', error);
-    res.status(500).json({ error: 'Failed to export audit' });
-  }
-});
-
-// Get current user info
-app.get('/api/user', authenticateToken, async (req, res) => {
-  try {
-    const users = await readJsonFile(USERS_FILE, []);
-    const user = users.find(u => u.id === req.user.userId);
-
-    if (!user) {
-      return res.status(404).json({ error: 'User not found' });
-    }
-
-    res.json({ 
-      user: {
-        id: user.id,
-        username: user.username,
-        email: user.email,
-        role: user.role,
-        fullName: user.fullName,
-        department: user.department,
-        createdAt: user.createdAt
-      }
+// ========================================
+// ERROR HANDLING
+// ========================================
+app.use((error, req, res, next) => {
+    console.error('Server error:', error);
+    
+    res.status(500).json({
+        success: false,
+        message: 'Internal server error'
     });
-  } catch (error) {
-    console.error('Error fetching user:', error);
-    res.status(500).json({ error: 'Failed to fetch user' });
-  }
-});
-// Get all users (analysts only)
-app.get('/api/users/list', authenticateToken, requireRole(['data_analyst']), async (req, res) => {
-  try {
-    const users = await readJsonFile(USERS_FILE, []);
-    
-    // Return user info without password hashes
-    const userList = users.map(user => ({
-      id: user.id,
-      username: user.username,
-      email: user.email,
-      role: user.role,
-      fullName: user.fullName,
-      department: user.department,
-      isActive: user.isActive,
-      createdAt: user.createdAt,
-      lastLogin: user.lastLogin
-    }));
-
-    res.json({ users: userList });
-  } catch (error) {
-    console.error('Error fetching users:', error);
-    res.status(500).json({ error: 'Failed to fetch users' });
-  }
 });
 
-// Delete user (analysts only)
-app.delete('/api/users/:id', authenticateToken, requireRole(['data_analyst']), async (req, res) => {
-  try {
-    const userIdToDelete = parseInt(req.params.id);
-    
-    // Prevent self-deletion
-    if (userIdToDelete === req.user.userId) {
-      return res.status(400).json({ error: 'Cannot delete your own account' });
-    }
-
-    const users = await readJsonFile(USERS_FILE, []);
-    const userIndex = users.findIndex(u => u.id === userIdToDelete);
-    
-    if (userIndex === -1) {
-      return res.status(404).json({ error: 'User not found' });
-    }
-
-    const deletedUser = users[userIndex];
-    users.splice(userIndex, 1);
-    await writeJsonFile(USERS_FILE, users);
-
-    res.json({ 
-      message: 'User deleted successfully', 
-      deletedUser: deletedUser.username 
+// 404 handler
+app.use((req, res) => {
+    res.status(404).json({
+        success: false,
+        message: 'Route not found'
     });
-  } catch (error) {
-    console.error('Error deleting user:', error);
-    res.status(500).json({ error: 'Failed to delete user' });
-  }
-});
-// Serve frontend
-app.get('*', (req, res) => {
-  res.sendFile(path.join(__dirname, 'public', 'index.html'));
 });
 
-// Error handling middleware
-app.use((err, req, res, next) => {
-  console.error(err.stack);
-  res.status(500).json({ error: 'Something went wrong!' });
-});
-
-// Initialize and start server
+// ========================================
+// SERVER STARTUP
+// ========================================
 async function startServer() {
-  try {
-    await initializeDatabase();
-    
-    app.listen(PORT, () => {
-      console.log(`PAKPRO Audit Server running on port ${PORT}`);
-      console.log(`Access the application at: http://localhost:${PORT}`);
-    });
-  } catch (error) {
-    console.error('Failed to start server:', error);
-    process.exit(1);
-  }
+    try {
+        await db.initialize();
+        
+        const port = CONFIG.PORT;
+        app.listen(port, () => {
+            console.log(`
+🎯 PAKPRO Kenya Digital Verification Audit System
+✅ Server running on http://localhost:${port}
+✅ Database connected and initialized
+🇰🇪 Supporting ${KENYAN_COUNTIES.length} Kenyan counties
+💰 Currency: KSh (${CONFIG.CURRENCY})
+            `);
+        });
+
+        // Graceful shutdown
+        process.on('SIGINT', async () => {
+            console.log('Shutting down server...');
+            process.exit(0);
+        });
+
+    } catch (error) {
+        console.error('Failed to start server:', error);
+        process.exit(1);
+    }
 }
 
 startServer();

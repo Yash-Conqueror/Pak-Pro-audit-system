@@ -8,5 +8,185 @@
     "oldStatus": null,
     "newStatus": null,
     "createdAt": "2025-09-15T07:42:52.997Z"
+  },
+  {
+    "id": 1758002281556,
+    "auditId": "AUDIT-1757922172996",
+    "userId": 1,
+    "activityType": "status_change",
+    "description": "Status changed from draft to pending_review",
+    "oldStatus": "draft",
+    "newStatus": "pending_review",
+    "createdAt": "2025-09-16T05:58:01.556Z"
+  },
+  {
+    "id": 1758002669009,
+    "auditId": "AUDIT-1757922172996",
+    "userId": 1,
+    "activityType": "status_change",
+    "description": "Status changed from pending_review to draft",
+    "oldStatus": "pending_review",
+    "newStatus": "draft",
+    "createdAt": "2025-09-16T06:04:29.009Z"
+  },
+  {
+    "id": 1758002681430,
+    "auditId": "AUDIT-1757922172996",
+    "userId": 1,
+    "activityType": "status_change",
+    "description": "Status changed from draft to pending_review",
+    "oldStatus": "draft",
+    "newStatus": "pending_review",
+    "createdAt": "2025-09-16T06:04:41.430Z"
+  },
+  {
+    "id": 1758084349722,
+    "auditId": "AUDIT-1758084349717",
+    "userId": 1,
+    "activityType": "created",
+    "description": "Audit created",
+    "oldStatus": null,
+    "newStatus": null,
+    "createdAt": "2025-09-17T04:45:49.722Z"
+  },
+  {
+    "id": 1758084375784,
+    "auditId": "AUDIT-1758084349717",
+    "userId": 1,
+    "activityType": "status_change",
+    "description": "Status changed from pending_review to draft",
+    "oldStatus": "pending_review",
+    "newStatus": "draft",
+    "createdAt": "2025-09-17T04:46:15.784Z"
+  },
+  {
+    "id": 1758084376685,
+    "auditId": "AUDIT-1758084349717",
+    "userId": 1,
+    "activityType": "status_change",
+    "description": "Status changed from draft to pending_review",
+    "oldStatus": "draft",
+    "newStatus": "pending_review",
+    "createdAt": "2025-09-17T04:46:16.685Z"
+  },
+  {
+    "id": 1758084435750,
+    "auditId": "AUDIT-1758084349717",
+    "userId": 1,
+    "activityType": "status_change",
+    "description": "Status changed from pending_review to draft",
+    "oldStatus": "pending_review",
+    "newStatus": "draft",
+    "createdAt": "2025-09-17T04:47:15.750Z"
+  },
+  {
+    "id": 1758084443778,
+    "auditId": "AUDIT-1757922172996",
+    "userId": 1,
+    "activityType": "status_change",
+    "description": "Status changed from pending_review to draft",
+    "oldStatus": "pending_review",
+    "newStatus": "draft",
+    "createdAt": "2025-09-17T04:47:23.778Z"
+  },
+  {
+    "id": 1758084453561,
+    "auditId": "AUDIT-1758084349717",
+    "userId": 1,
+    "activityType": "status_change",
+    "description": "Status changed from draft to finalized",
+    "oldStatus": "draft",
+    "newStatus": "finalized",
+    "createdAt": "2025-09-17T04:47:33.561Z"
+  },
+  {
+    "id": 1758084457538,
+    "auditId": "AUDIT-1758084349717",
+    "userId": 1,
+    "activityType": "status_change",
+    "description": "Status changed from finalized to pending_review",
+    "oldStatus": "finalized",
+    "newStatus": "pending_review",
+    "createdAt": "2025-09-17T04:47:37.538Z"
+  },
+  {
+    "id": 1758084465421,
+    "auditId": "AUDIT-1758084349717",
+    "userId": 1,
+    "activityType": "status_change",
+    "description": "Status changed from pending_review to finalized",
+    "oldStatus": "pending_review",
+    "newStatus": "finalized",
+    "createdAt": "2025-09-17T04:47:45.421Z"
+  },
+  {
+    "id": 1758084479018,
+    "auditId": "AUDIT-1758084349717",
+    "userId": 1,
+    "activityType": "status_change",
+    "description": "Status changed from finalized to pending_review",
+    "oldStatus": "finalized",
+    "newStatus": "pending_review",
+    "createdAt": "2025-09-17T04:47:59.018Z"
+  },
+  {
+    "id": 1758084497525,
+    "auditId": "AUDIT-1757922172996",
+    "userId": 1,
+    "activityType": "status_change",
+    "description": "Status changed from draft to pending_review",
+    "oldStatus": "draft",
+    "newStatus": "pending_review",
+    "createdAt": "2025-09-17T04:48:17.525Z"
+  },
+  {
+    "id": 1758084539286,
+    "auditId": "AUDIT-1757922172996",
+    "userId": 1,
+    "activityType": "status_change",
+    "description": "Status changed from pending_review to finalized",
+    "oldStatus": "pending_review",
+    "newStatus": "finalized",
+    "createdAt": "2025-09-17T04:48:59.286Z"
+  },
+  {
+    "id": 1758084561837,
+    "auditId": "AUDIT-1758084349717",
+    "userId": 1,
+    "activityType": "status_change",
+    "description": "Status changed from pending_review to finalized",
+    "oldStatus": "pending_review",
+    "newStatus": "finalized",
+    "createdAt": "2025-09-17T04:49:21.837Z"
+  },
+  {
+    "id": 1758084574777,
+    "auditId": "AUDIT-1757922172996",
+    "userId": 1,
+    "activityType": "status_change",
+    "description": "Status changed from finalized to draft",
+    "oldStatus": "finalized",
+    "newStatus": "draft",
+    "createdAt": "2025-09-17T04:49:34.777Z"
+  },
+  {
+    "id": 1758084594005,
+    "auditId": "AUDIT-1757922172996",
+    "userId": 1,
+    "activityType": "status_change",
+    "description": "Status changed from draft to finalized",
+    "oldStatus": "draft",
+    "newStatus": "finalized",
+    "createdAt": "2025-09-17T04:49:54.005Z"
+  },
+  {
+    "id": 1758169209516,
+    "auditId": "AUDIT-1757922172996",
+    "userId": 1,
+    "activityType": "status_change",
+    "description": "Status changed from finalized to pending_review",
+    "oldStatus": "finalized",
+    "newStatus": "pending_review",
+    "createdAt": "2025-09-18T04:20:09.516Z"
   }
 ]
