@@ -14,8 +14,8 @@ const cors = require('cors');
 const helmet = require('helmet');
 const rateLimit = require('express-rate-limit');
 const compression = require('compression');
-// ✅ Trust proxy (important for X-Forwarded-For headers)
-app.set("trust proxy", 1); // 1 = trust first proxy (safest for most cases)
+
+
 // ========================================
 // CONFIGURATION - KENYA
 // ========================================
