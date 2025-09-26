@@ -319,6 +319,9 @@ const authLimiter = rateLimit({
 const app = express();
 const db = new Database();
 
+// Trust proxy configuration (required for rate limiting behind proxies/load balancers)
+app.set('trust proxy', true);
+
 // Security middleware
 app.use(helmet({
     contentSecurityPolicy: {
